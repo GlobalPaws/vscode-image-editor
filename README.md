@@ -1,7 +1,7 @@
 # Image Editor: Simple Crop
 
 <p align="center">
-  <img src="icon.png" width="128" height="128" alt="Image Editor: Simple Crop Icon">
+  <img src="https://raw.githubusercontent.com/GlobalPaws/vscode-image-editor/main/icon.png" width="128" height="128" alt="Image Editor: Simple Crop Icon">
 </p>
 
 <p align="center">
@@ -29,7 +29,7 @@
 ## Preview / プレビュー
 
 <p align="center">
-  <img src="preview.png" alt="Image Editor: Simple Crop Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/GlobalPaws/vscode-image-editor/main/preview.png" alt="Image Editor: Simple Crop Preview" width="100%">
 </p>
 
 ---
