@@ -29,7 +29,7 @@
 ## Preview / プレビュー
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/GlobalPaws/vscode-image-editor/main/preview.png" alt="Image Editor: Simple Crop Preview" width="100%">
+  <img src="https://raw.githubusercontent.com/GlobalPaws/vscode-image-editor/main/preview_demo.png" alt="Image Editor: Simple Crop Preview" width="100%">
 </p>
 
 ---
