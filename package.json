@@ -1,0 +1,59 @@
+{
+  "name": "simple-image-crop",
+  "displayName": "Image Editor: Simple Crop",
+  "description": "Crop images with Excel-style handles and overwrite directly. / Excel風ハンドルで直感的にトリミングし、元ファイルに直接上書き保存します。",
+  "version": "1.1.0",
+  "publisher": "globalpaws",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "keywords": [
+    "crop",
+    "image",
+    "image-editor",
+    "trim",
+    "overwrite",
+    "excel-crop"
+  ],
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:simple-image-crop.crop"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "simple-image-crop.crop",
+        "title": "Image Editor: Simple Crop"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "simple-image-crop.crop",
+          "when": "resourceExtname =~ /\\.(png|jpg|jpeg|webp|bmp)$/i",
+          "group": "navigation@1"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "simple-image-crop.crop",
+          "when": "resourceExtname =~ /\\.(png|jpg|jpeg|webp|bmp)$/i",
+          "group": "navigation@1"
+        }
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GlobalPaws/vscode-image-editor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/GlobalPaws/vscode-image-editor/issues"
+  },
+  "homepage": "https://github.com/GlobalPaws/vscode-image-editor#readme",
+  "license": "MIT"
+}
