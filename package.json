@@ -2,7 +2,7 @@
   "name": "simple-image-crop",
   "displayName": "Image Editor: Simple Crop",
   "description": "Crop images with Excel-style handles and overwrite directly. / Excel風ハンドルで直感的にトリミングし、元ファイルに直接上書き保存します。",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "publisher": "globalpaws",
   "icon": "icon.png",
   "engines": {
@@ -21,7 +21,8 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:simple-image-crop.crop"
+    "onCommand:simple-image-crop.crop",
+    "onCustomEditor:simple-image-crop.editor"
   ],
   "main": "./extension.js",
   "contributes": {
@@ -46,7 +47,19 @@
           "group": "navigation@1"
         }
       ]
-    }
+    },
+    "customEditors": [
+      {
+        "viewType": "simple-image-crop.editor",
+        "displayName": "Image Editor: Simple Crop",
+        "selector": [
+          {
+            "filenamePattern": "*.{png,jpg,jpeg,webp,bmp}"
+          }
+        ],
+        "priority": "option"
+      }
+    ]
   },
   "repository": {
     "type": "git",

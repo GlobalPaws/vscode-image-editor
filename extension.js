@@ -3,6 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 function activate(context) {
+  // 1. Custom Editor Provider (Open With & Default Editor support)
+  context.subscriptions.push(SimpleImageCropEditorProvider.register(context));
+
+  // 2. Context Menu Command
   let disposable = vscode.commands.registerCommand('simple-image-crop.crop', async (uri) => {
     let targetUri = uri;
     if (!targetUri) {
@@ -24,6 +28,50 @@ function activate(context) {
       return;
     }
 
+    await vscode.commands.executeCommand('vscode.openWith', targetUri, 'simple-image-crop.editor');
+  });
+
+  context.subscriptions.push(disposable);
+}
+
+class SimpleImageCropEditorProvider {
+  static register(context) {
+    const provider = new SimpleImageCropEditorProvider(context);
+    return vscode.window.registerCustomEditorProvider(
+      'simple-image-crop.editor',
+      provider,
+      {
+        webviewOptions: {
+          retainContextWhenHidden: true,
+          enableScripts: true
+        },
+        supportsMultipleEditorsPerDocument: false
+      }
+    );
+  }
+
+  constructor(context) {
+    this.context = context;
+  }
+
+  async openCustomDocument(uri, openContext, token) {
+    return { uri, dispose: () => {} };
+  }
+
+  async resolveCustomEditor(document, webviewPanel, token) {
+    webviewPanel.webview.options = {
+      enableScripts: true
+    };
+
+    const filePath = document.uri.fsPath;
+    const fileName = path.basename(filePath);
+    const ext = path.extname(filePath).toLowerCase();
+
+    let mimeType = 'image/png';
+    if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
+    else if (ext === '.webp') mimeType = 'image/webp';
+    else if (ext === '.bmp') mimeType = 'image/bmp';
+
     let base64Data;
     try {
       const fileBuffer = fs.readFileSync(filePath);
@@ -33,42 +81,27 @@ function activate(context) {
       return;
     }
 
-    let mimeType = 'image/png';
-    if (ext === '.jpg' || ext === '.jpeg') mimeType = 'image/jpeg';
-    else if (ext === '.webp') mimeType = 'image/webp';
-    else if (ext === '.bmp') mimeType = 'image/bmp';
+    webviewPanel.webview.html = getWebviewContent(fileName, mimeType, base64Data);
 
-    const fileName = path.basename(filePath);
-    const panel = vscode.window.createWebviewPanel(
-      'simpleImageCrop',
-      `Crop: ${fileName}`,
-      vscode.ViewColumn.Active,
-      {
-        enableScripts: true,
-        retainContextWhenHidden: true
-      }
-    );
-
-    panel.webview.html = getWebviewContent(fileName, mimeType, base64Data);
-
-    panel.webview.onDidReceiveMessage(async (message) => {
+    webviewPanel.webview.onDidReceiveMessage(async (message) => {
       if (message.command === 'save') {
         try {
           const rawBase64 = message.data.replace(/^data:image\/\w+;base64,/, '');
           const buffer = Buffer.from(rawBase64, 'base64');
           fs.writeFileSync(filePath, buffer);
           vscode.window.showInformationMessage(`✅ Overwritten: ${fileName} (${buffer.length} bytes)`);
-          panel.dispose();
+          
+          // Re-feed new image to webview so it displays the updated crop immediately
+          base64Data = buffer.toString('base64');
+          webviewPanel.webview.postMessage({ command: 'updated', imageSrc: `data:${mimeType};base64,${base64Data}` });
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to overwrite file: ${err.message}`);
         }
       } else if (message.command === 'cancel') {
-        panel.dispose();
+        webviewPanel.dispose();
       }
-    }, undefined, context.subscriptions);
-  });
-
-  context.subscriptions.push(disposable);
+    });
+  }
 }
 
 function getWebviewContent(fileName, mimeType, base64Data) {
@@ -393,7 +426,7 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     </div>
 
     <div class="toolbar-right">
-      <button class="btn btn-secondary" onclick="cancel()">Cancel</button>
+      <button class="btn btn-secondary" onclick="cancel()">Close</button>
       <button class="btn btn-primary" id="saveBtn" onclick="saveAndOverwrite()">
         💾 Save & Overwrite (Cmd+S)
       </button>
@@ -461,6 +494,15 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       originalSizeBadge.innerText = \`Original: \${img.naturalWidth} x \${img.naturalHeight}\`;
       resetCrop();
     };
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data;
+      if (msg.command === 'updated') {
+        img.src = msg.imageSrc;
+        saveBtn.disabled = false;
+        saveBtn.innerText = '💾 Save & Overwrite (Cmd+S)';
+      }
+    });
 
     function resetCrop() {
       const stageW = img.clientWidth;
