@@ -61,6 +61,7 @@
 | Shortcut | Action |
 |---|---|
 | **Cmd + S** / **Ctrl + S** | Save & Overwrite original image |
+| **Cmd + C** / **Ctrl + C** | Copy cropped image to clipboard |
 | **Cmd + Wheel** / **Ctrl + Wheel** | Zoom In / Out |
 | **Cmd + +** / **Ctrl + +** | Zoom In |
 | **Cmd + -** / **Ctrl + -** | Zoom Out |

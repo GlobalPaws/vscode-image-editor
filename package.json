@@ -2,7 +2,7 @@
   "name": "simple-image-crop",
   "displayName": "Image Editor: Simple Crop",
   "description": "Fast & intuitive image cropping, resizing, and zoom with Excel-style handles and direct overwrite saving. / Excel風ハンドル操作で直感的にトリミング・リサイズ・ズームし、元ファイルに直接上書き保存します。",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "publisher": "globalpaws",
   "icon": "icon.png",
   "engines": {

@@ -1,6 +1,8 @@
 const vscode = require('vscode');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { exec } = require('child_process');
 
 function activate(context) {
   // 1. Custom Editor Provider (Open With & Default Editor support)
@@ -107,6 +109,44 @@ class SimpleImageCropEditorProvider {
           });
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to overwrite file: ${err.message}`);
+        }
+      } else if (message.command === 'copyImage') {
+        try {
+          const rawBase64 = message.data.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(rawBase64, 'base64');
+          const tmpPath = path.join(os.tmpdir(), `temp_crop_copy_${Date.now()}.png`);
+          fs.writeFileSync(tmpPath, buffer);
+
+          if (process.platform === 'darwin') {
+            exec(`osascript -e 'set the clipboard to (read (POSIX file "${tmpPath}") as «class PNGf»)'`, (error) => {
+              try { fs.unlinkSync(tmpPath); } catch (e) {}
+              if (error) {
+                vscode.window.showErrorMessage(`Failed to copy image: ${error.message}`);
+              } else {
+                vscode.window.showInformationMessage('📋 Image copied to clipboard!');
+              }
+            });
+          } else if (process.platform === 'win32') {
+            exec(`powershell -command "Set-Clipboard -Path '${tmpPath}'"`, (error) => {
+              try { fs.unlinkSync(tmpPath); } catch (e) {}
+              if (error) {
+                vscode.window.showErrorMessage(`Failed to copy image: ${error.message}`);
+              } else {
+                vscode.window.showInformationMessage('📋 Image copied to clipboard!');
+              }
+            });
+          } else {
+            exec(`xclip -selection clipboard -t image/png -i "${tmpPath}"`, (error) => {
+              try { fs.unlinkSync(tmpPath); } catch (e) {}
+              if (error) {
+                vscode.window.showErrorMessage(`Failed to copy image: ${error.message}`);
+              } else {
+                vscode.window.showInformationMessage('📋 Image copied to clipboard!');
+              }
+            });
+          }
+        } catch (err) {
+          vscode.window.showErrorMessage(`Failed to copy image: ${err.message}`);
         }
       } else if (message.command === 'saveSettings') {
         if (message.settings) {
@@ -820,6 +860,73 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       margin: 0 2px;
       font-size: 10px;
     }
+
+    /* Custom Context Menu */
+    .context-menu {
+      display: none;
+      position: fixed;
+      background: var(--modal-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: var(--modal-box-shadow);
+      padding: 4px;
+      z-index: 500;
+      min-width: 140px;
+      user-select: none;
+    }
+    .context-menu.open {
+      display: block;
+    }
+    .context-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--text-main);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .context-menu-item:hover {
+      background: var(--btn-toggle-active-bg);
+      color: var(--btn-toggle-active-color);
+    }
+    .context-menu-item:hover .context-menu-shortcut {
+      color: rgba(255, 255, 255, 0.85);
+    }
+    .context-menu-shortcut {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: monospace;
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 42px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: rgba(16, 124, 65, 0.92);
+      color: #ffffff;
+      padding: 8px 18px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      z-index: 1000;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
   </style>
 </head>
 <body class="${initialTheme === 'light' ? 'theme-light' : 'theme-dark'}">
@@ -1000,9 +1107,21 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       </div>
     </div>
     <div class="footer-right">
-      <span id="footerShortcutsText">Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset</span>
+      <span id="footerShortcutsText">Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">Cmd + C</span> Copy / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset</span>
     </div>
   </div>
+
+  <!-- Custom Context Menu -->
+  <div id="customContextMenu" class="context-menu">
+    <div class="context-menu-item" onclick="copyCroppedImage()">
+      <span class="context-menu-icon">📋</span>
+      <span class="context-menu-label" id="contextMenuCopyLabel">Copy</span>
+      <span class="context-menu-shortcut" id="contextMenuShortcutLabel">Cmd+C</span>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">📋 Copied to clipboard!</div>
 
   <script>
     const vscode = acquireVsCodeApi();
@@ -1060,8 +1179,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Quick Scale:',
         cancelBtn: 'Cancel',
         resizeSaveBtn: '💾 Resize & Save',
-        shortcuts: 'Shortcuts: <span class=\"shortcut-tag\">Cmd + S</span> Save / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Free / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">Cmd + C</span> Copy / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Light',
+        copyMenu: 'Copy',
+        copiedToast: '📋 Copied to clipboard!',
         themeDark: '🌙 Dark'
       },
       ja: {
@@ -1089,8 +1210,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'クイック倍率:',
         cancelBtn: 'キャンセル',
         resizeSaveBtn: '💾 リサイズして保存',
-        shortcuts: 'ショートカット: <span class=\"shortcut-tag\">Cmd + S</span> 保存 / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> 自由 / <span class=\"shortcut-tag\">R</span> リセット',
+        shortcuts: 'ショートカット: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> コピー / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> リセット',
         themeLight: '☀️ ライト',
+        copyMenu: 'コピー',
+        copiedToast: '📋 クリップボードにコピーしました',
         themeDark: '🌙 ダーク'
       },
       zh: {
@@ -1118,8 +1241,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: '快速缩放:',
         cancelBtn: '取消',
         resizeSaveBtn: '💾 调整并保存',
-        shortcuts: '快捷键: <span class=\"shortcut-tag\">Cmd + S</span> 保存 / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> 自由 / <span class=\"shortcut-tag\">R</span> 重置',
+        shortcuts: '快捷键: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> 复制 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> 重置',
         themeLight: '☀️ 浅色',
+        copyMenu: '复制',
+        copiedToast: '📋 已复制到剪贴板',
         themeDark: '🌙 深色'
       },
       ko: {
@@ -1147,8 +1272,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: '빠른 배율:',
         cancelBtn: '취소',
         resizeSaveBtn: '💾 크기 변경 및 저장',
-        shortcuts: '단축키: <span class=\"shortcut-tag\">Cmd + S</span> 저장 / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> 자유 / <span class=\"shortcut-tag\">R</span> 초기화',
+        shortcuts: '단축키: <span class="shortcut-tag">Cmd + S</span> 저장 / <span class="shortcut-tag">Cmd + C</span> 복사 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 자유 / <span class="shortcut-tag">R</span> 초기화',
         themeLight: '☀️ 라이트',
+        copyMenu: '복사',
+        copiedToast: '📋 클립보드에 복사되었습니다',
         themeDark: '🌙 다크'
       },
       es: {
@@ -1176,8 +1303,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Escala rápida:',
         cancelBtn: 'Cancelar',
         resizeSaveBtn: '💾 Redimensionar y guardar',
-        shortcuts: 'Atajos: <span class=\"shortcut-tag\">Cmd + S</span> Guardar / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Libre / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Atajos: <span class="shortcut-tag">Cmd + S</span> Guardar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Claro',
+        copyMenu: 'Copiar',
+        copiedToast: '📋 ¡Copiado al portapapeles!',
         themeDark: '🌙 Oscuro'
       },
       de: {
@@ -1205,8 +1334,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Schnellskalierung:',
         cancelBtn: 'Abbrechen',
         resizeSaveBtn: '💾 Skalieren & Speichern',
-        shortcuts: 'Kürzel: <span class=\"shortcut-tag\">Cmd + S</span> Speichern / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Frei / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Kürzel: <span class="shortcut-tag">Cmd + S</span> Speichern / <span class="shortcut-tag">Cmd + C</span> Kopieren / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Frei / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Hell',
+        copyMenu: 'Kopieren',
+        copiedToast: '📋 In die Zwischenablage kopiert!',
         themeDark: '🌙 Dunkel'
       },
       fr: {
@@ -1234,8 +1365,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Échelle rapide :',
         cancelBtn: 'Annuler',
         resizeSaveBtn: '💾 Redimensionner et enregistrer',
-        shortcuts: 'Raccourcis : <span class=\"shortcut-tag\">Cmd + S</span> Enregistrer / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Libre / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Raccourcis : <span class="shortcut-tag">Cmd + S</span> Enregistrer / <span class="shortcut-tag">Cmd + C</span> Copier / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Clair',
+        copyMenu: 'Copier',
+        copiedToast: '📋 Copié dans le presse-papiers !',
         themeDark: '🌙 Sombre'
       },
       vi: {
@@ -1263,8 +1396,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Tỷ lệ nhanh:',
         cancelBtn: 'Hủy',
         resizeSaveBtn: '💾 Đổi cỡ và lưu',
-        shortcuts: 'Phím tắt: <span class=\"shortcut-tag\">Cmd + S</span> Lưu / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Tự do / <span class=\"shortcut-tag\">R</span> Đặt lại',
+        shortcuts: 'Phím tắt: <span class="shortcut-tag">Cmd + S</span> Lưu / <span class="shortcut-tag">Cmd + C</span> Sao chép / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Tự do / <span class="shortcut-tag">R</span> Đặt lại',
         themeLight: '☀️ Sáng',
+        copyMenu: 'Sao chép',
+        copiedToast: '📋 Đã sao chép vào khay nhớ tạm!',
         themeDark: '🌙 Tối'
       },
       hi: {
@@ -1291,8 +1426,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'त्वरित पैमाना:',
         cancelBtn: 'रद्द करें',
         resizeSaveBtn: '💾 आकार बदलें और सहेजें',
-        shortcuts: 'शॉर्टकट: <span class=\"shortcut-tag\">Cmd + S</span> सेव / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> मुक्त / <span class=\"shortcut-tag\">R</span> रीसेट',
+        shortcuts: 'शॉर्टकट: <span class="shortcut-tag">Cmd + S</span> सेव / <span class="shortcut-tag">Cmd + C</span> कॉपी / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> मुक्त / <span class="shortcut-tag">R</span> रीसेट',
         themeLight: '☀️ लाइट',
+        copyMenu: 'कॉपी करें',
+        copiedToast: '📋 क्लिपबोर्ड पर कॉपी किया गया!',
         themeDark: '🌙 डार्क'
       },
       it: {
@@ -1319,8 +1456,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Scala rapida:',
         cancelBtn: 'Annulla',
         resizeSaveBtn: '💾 Ridimensiona e salva',
-        shortcuts: 'Scorciatoie: <span class=\"shortcut-tag\">Cmd + S</span> Salva / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Libero / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Scorciatoie: <span class="shortcut-tag">Cmd + S</span> Salva / <span class="shortcut-tag">Cmd + C</span> Copia / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libero / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Chiaro',
+        copyMenu: 'Copia',
+        copiedToast: '📋 Copiato negli appunti!',
         themeDark: '🌙 Scuro'
       },
       pt: {
@@ -1347,8 +1486,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Escala rápida:',
         cancelBtn: 'Cancelar',
         resizeSaveBtn: '💾 Redimensionar e salvar',
-        shortcuts: 'Atalhos: <span class=\"shortcut-tag\">Cmd + S</span> Salvar / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Livre / <span class=\"shortcut-tag\">R</span> Reset',
+        shortcuts: 'Atalhos: <span class="shortcut-tag">Cmd + S</span> Salvar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Livre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Claro',
+        copyMenu: 'Copiar',
+        copiedToast: '📋 Copiado para a área de transferência!',
         themeDark: '🌙 Escuro'
       },
       ru: {
@@ -1375,8 +1516,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Быстрый масштаб:',
         cancelBtn: 'Отмена',
         resizeSaveBtn: '💾 Изменить размер и сохранить',
-        shortcuts: 'Горячие клавиши: <span class=\"shortcut-tag\">Cmd + S</span> Сохранить / <span class=\"shortcut-tag\">1</span> 1:1 / <span class=\"shortcut-tag\">F</span> Свободно / <span class=\"shortcut-tag\">R</span> Сброс',
+        shortcuts: 'Горячие клавиши: <span class="shortcut-tag">Cmd + S</span> Сохранить / <span class="shortcut-tag">Cmd + C</span> Копировать / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Свободно / <span class="shortcut-tag">R</span> Сброс',
         themeLight: '☀️ Светлая',
+        copyMenu: 'Копировать',
+        copiedToast: '📋 Скопировано в буфер обмена!',
         themeDark: '🌙 Темная'
       }
     };
@@ -1467,6 +1610,17 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
       // Footer
       document.getElementById('footerShortcutsText').innerHTML = t.shortcuts;
+
+      // Context Menu
+      const copyLabel = document.getElementById('contextMenuCopyLabel');
+      if (copyLabel && t.copyMenu) {
+        copyLabel.innerText = t.copyMenu;
+      }
+      const shortcutLabel = document.getElementById('contextMenuShortcutLabel');
+      if (shortcutLabel) {
+        const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+        shortcutLabel.innerText = isMac ? 'Cmd+C' : 'Ctrl+C';
+      }
 
       updateUI();
 
@@ -1801,6 +1955,9 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         saveAndOverwrite();
+      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        copyCroppedImage();
       } else if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
         zoomChange(0.1);
@@ -1811,6 +1968,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         e.preventDefault();
         resetZoom();
       } else if (e.key === 'Escape') {
+        closeContextMenu();
         if (settingsModal.classList.contains('open')) {
           closeSettingsModal();
         } else if (resizeModal.classList.contains('open')) {
@@ -1835,28 +1993,109 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       }
     }, { passive: false });
 
+    // Context Menu & Copy Functions
+    const contextMenu = document.getElementById('customContextMenu');
+    let toastTimeout = null;
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      if (!toast) return;
+      toast.innerText = msg;
+      toast.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2000);
+    }
+
+    function closeContextMenu() {
+      if (contextMenu && contextMenu.classList.contains('open')) {
+        contextMenu.classList.remove('open');
+        contextMenu.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      if (!contextMenu) return;
+
+      contextMenu.style.display = 'block';
+      const menuW = contextMenu.offsetWidth || 150;
+      const menuH = contextMenu.offsetHeight || 42;
+
+      let x = e.clientX;
+      let y = e.clientY;
+      if (x + menuW > window.innerWidth) x = Math.max(0, window.innerWidth - menuW - 8);
+      if (y + menuH > window.innerHeight) y = Math.max(0, window.innerHeight - menuH - 8);
+
+      contextMenu.style.left = x + 'px';
+      contextMenu.style.top = y + 'px';
+      contextMenu.classList.add('open');
+    });
+
+    window.addEventListener('click', (e) => {
+      if (contextMenu && !contextMenu.contains(e.target)) {
+        closeContextMenu();
+      }
+    });
+
+    function getCroppedCanvas() {
+      const stageW = img.clientWidth;
+      const scale = img.naturalWidth / stageW;
+
+      const naturalX = Math.round(crop.left * scale);
+      const naturalY = Math.round(crop.top * scale);
+      const naturalW = Math.round(crop.width * scale);
+      const naturalH = Math.round(crop.height * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, naturalW);
+      canvas.height = Math.max(1, naturalH);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      ctx.drawImage(img, naturalX, naturalY, naturalW, naturalH, 0, 0, naturalW, naturalH);
+      return canvas;
+    }
+
+    async function copyCroppedImage() {
+      closeContextMenu();
+      const canvas = getCroppedCanvas();
+      if (!canvas) return;
+
+      let copied = false;
+      if (navigator.clipboard && window.ClipboardItem) {
+        try {
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+          if (blob) {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            copied = true;
+          }
+        } catch (err) {
+          console.warn('navigator.clipboard.write failed, falling back to postMessage', err);
+        }
+      }
+
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+      if (copied) {
+        showToast(getT().copiedToast || '📋 Copied to clipboard!');
+      } else {
+        vscode.postMessage({
+          command: 'copyImage',
+          data: dataUrl
+        });
+      }
+    }
+
     function saveAndOverwrite() {
       saveBtn.disabled = true;
       saveBtn.innerText = getT().savingBtn;
 
       setTimeout(() => {
-        const stageW = img.clientWidth;
-        const scale = img.naturalWidth / stageW;
-
-        const naturalX = Math.round(crop.left * scale);
-        const naturalY = Math.round(crop.top * scale);
-        const naturalW = Math.round(crop.width * scale);
-        const naturalH = Math.round(crop.height * scale);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = naturalW;
-        canvas.height = naturalH;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = true;
-        ctx.imageSmoothingQuality = 'high';
-
-        ctx.drawImage(img, naturalX, naturalY, naturalW, naturalH, 0, 0, naturalW, naturalH);
-
+        const canvas = getCroppedCanvas();
         const dataUrl = canvas.toDataURL('${mimeType}', 1.0);
         vscode.postMessage({
           command: 'save',
