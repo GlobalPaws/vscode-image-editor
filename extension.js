@@ -278,16 +278,21 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       gap: 8px;
       z-index: 100;
       box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
       white-space: nowrap;
-      overflow-x: auto;
     }
-    .toolbar-left, .toolbar-center, .toolbar-right {
+    .toolbar-left, .toolbar-right {
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-wrap: nowrap;
+      gap: 6px;
       flex-shrink: 0;
+    }
+    .toolbar-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
     .toolbar-left {
       min-width: 0;
@@ -298,7 +303,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       font-size: 13px;
       color: var(--text-title);
       white-space: nowrap;
-      max-width: 150px;
+      max-width: 130px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
@@ -321,6 +326,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
     .btn-group {
       display: inline-flex;
+      align-items: center;
       background: var(--btn-group-bg);
       border-radius: 4px;
       overflow: hidden;
@@ -333,6 +339,9 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       padding: 3px 8px;
       font-size: 11px;
       cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
       transition: background 0.15s, color 0.15s;
     }
     .btn-toggle:hover {
@@ -342,6 +351,26 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       background: var(--btn-toggle-active-bg);
       color: var(--btn-toggle-active-color);
       font-weight: 600;
+    }
+    .btn-rotate {
+      background: transparent;
+      border: none;
+      color: var(--btn-toggle-color);
+      padding: 4px 7px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-rotate:hover {
+      background: var(--btn-toggle-hover);
+      color: var(--text-title);
+    }
+    .btn-rotate svg {
+      width: 14px;
+      height: 14px;
+      display: block;
     }
 
     .crop-size-control {
@@ -450,8 +479,8 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       background: var(--btn-sec-bg);
       border: 1px solid var(--border-color);
       color: var(--text-main);
-      padding: 3px 6px;
-      font-size: 12px;
+      padding: 4px 7px;
+      font-size: 13px;
       border-radius: 4px;
       cursor: pointer;
       display: inline-flex;
@@ -461,6 +490,46 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
     }
     .btn-icon:hover {
       background: var(--btn-sec-hover);
+    }
+
+    /* Responsive adjustments for toolbar */
+    @media (max-width: 1150px) {
+      .toolbar {
+        padding: 5px 8px;
+        gap: 5px;
+      }
+      .file-title {
+        max-width: 80px;
+      }
+      .btn-toggle {
+        padding: 3px 6px;
+        font-size: 10.5px;
+      }
+      .btn {
+        padding: 4px 7px;
+        font-size: 10.5px;
+      }
+      .save-shortcut-hint {
+        display: none;
+      }
+    }
+    @media (max-width: 860px) {
+      .toolbar {
+        justify-content: center;
+      }
+      .toolbar-left {
+        order: 1;
+      }
+      .toolbar-right {
+        order: 2;
+      }
+      .toolbar-center {
+        order: 3;
+        width: 100%;
+        margin-top: 1px;
+        padding-top: 4px;
+        border-top: 1px dashed var(--border-color);
+      }
     }
 
     /* Workspace */
@@ -479,14 +548,13 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         linear-gradient(-45deg, var(--checker-2) 75%, var(--checker-1) 75%);
       background-size: 20px 20px;
       background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-      padding: 30px;
+      padding: 60px;
       transition: background-color 0.2s;
     }
 
     /* Stage Container */
     .stage {
       position: relative;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
       display: inline-block;
       transition: transform 0.05s ease-out;
     }
@@ -500,26 +568,24 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       height: auto;
       pointer-events: none;
       image-rendering: auto;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+      outline: 1px dashed rgba(128, 128, 128, 0.5);
     }
 
     /* Crop Mask */
     .mask {
-      position: absolute;
-      background: var(--mask-color);
-      pointer-events: none;
-      transition: background 0.1s;
+      display: none;
     }
-    #maskTop { top: 0; left: 0; right: 0; }
-    #maskBottom { bottom: 0; left: 0; right: 0; }
-    #maskLeft { left: 0; }
-    #maskRight { right: 0; }
 
     /* Crop Box */
     .crop-box {
       position: absolute;
       box-sizing: border-box;
       outline: 1.5px dashed var(--crop-outline);
+      box-shadow: 0 0 0 9999px var(--mask-color);
       cursor: move;
+      z-index: 10;
+      transition: border-radius 0.15s ease;
     }
 
     /* Excel-style Handles */
@@ -768,6 +834,8 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
     /* Footer Hint */
     .footer-hint {
+      position: relative;
+      z-index: 100;
       background: var(--bg-footer);
       border-top: 1px solid var(--border-color);
       padding: 4px 14px;
@@ -934,21 +1002,47 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
   <!-- Toolbar -->
   <div class="toolbar">
     <div class="toolbar-left">
-      <button class="btn-icon" id="settingsBtn" onclick="openSettingsModal()" title="Settings / 設定">⚙️</button>
-      <span class="file-title" title="${fileName}">${fileName}</span>
+      <button class="btn-icon" id="settingsBtn" onclick="openSettingsModal()">⚙️</button>
+      <span class="file-title" id="fileTitle" title="${fileName}">${fileName}</span>
     </div>
 
     <div class="toolbar-center">
       <!-- Aspect Ratio Presets -->
       <div class="btn-group">
-        <button class="btn-toggle active" id="ratioFree" onclick="setRatio('free')" title="Free crop">Free</button>
-        <button class="btn-toggle" id="ratioSquare" onclick="setRatio('1:1')" title="Square (1:1)">1:1</button>
-        <button class="btn-toggle" id="ratio16_9" onclick="setRatio('16:9')" title="16:9 Landscape">16:9</button>
-        <button class="btn-toggle" id="ratio4_3" onclick="setRatio('4:3')" title="4:3 Landscape">4:3</button>
+        <button class="btn-toggle active" id="ratioFree" onclick="setRatio('free')">Free</button>
+        <button class="btn-toggle" id="ratioSquare" onclick="setRatio('1:1')">1:1</button>
+        <button class="btn-toggle" id="ratioPadSquare" onclick="padToSquare()">⛶ Pad 1:1</button>
+        <button class="btn-toggle" id="ratio16_9" onclick="setRatio('16:9')">16:9</button>
+        <button class="btn-toggle" id="ratio4_3" onclick="setRatio('4:3')">4:3</button>
+      </div>
+
+      <!-- Circle / Rounded Corner Shape Control -->
+      <div class="btn-group">
+        <button class="btn-toggle" id="btnShapeCircle" onclick="toggleShapeCircle()">⚪ Circle</button>
+      </div>
+      <div class="size-input-wrapper" id="cropRadiusWrapper">
+        <label for="cropRadiusInput">R:</label>
+        <input type="number" id="cropRadiusInput" class="size-input" min="0" max="1000" step="2" value="0" onchange="onRadiusInputChange()">
+      </div>
+
+      <!-- Rotate Controls with Sharp SVG Icons -->
+      <div class="btn-group">
+        <button class="btn-rotate" id="btnRotateLeft" onclick="rotateImage(-90)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
+        <button class="btn-rotate" id="btnRotateRight" onclick="rotateImage(90)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+            <path d="M21 3v5h-5"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Numerical Crop Size Direct Input -->
-      <div class="crop-size-control" title="Crop size in pixels (W x H)">
+      <div class="crop-size-control" id="cropSizeControl">
         <div class="size-input-wrapper">
           <label for="cropInputW">W:</label>
           <input type="number" id="cropInputW" class="size-input" min="1" step="1" onchange="onCropInputChange()">
@@ -958,16 +1052,16 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
           <label for="cropInputH">H:</label>
           <input type="number" id="cropInputH" class="size-input" min="1" step="1" onchange="onCropInputChange()">
         </div>
-        <button id="ratioLockBtn" class="lock-btn" onclick="toggleRatioLock()" title="Lock Aspect Ratio">🔓</button>
+        <button id="ratioLockBtn" class="lock-btn" onclick="toggleRatioLock()">🔓</button>
       </div>
 
       <!-- Resize Image Button -->
-      <button class="btn btn-secondary" id="btnOpenResize" onclick="openResizeModal()" title="Resize image dimensions">
+      <button class="btn btn-secondary" id="btnOpenResize" onclick="openResizeModal()">
         📐 Resize
       </button>
 
       <!-- Reset Button -->
-      <button class="btn btn-secondary" id="btnReset" onclick="resetCrop()" title="Reset crop box to full image">
+      <button class="btn btn-secondary" id="btnReset" onclick="resetCrop()">
         ↺ Reset
       </button>
     </div>
@@ -1157,6 +1251,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       en: {
         ratioFree: 'Free',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Pad 1:1',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Resize',
@@ -1179,15 +1274,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Quick Scale:',
         cancelBtn: 'Cancel',
         resizeSaveBtn: '💾 Resize & Save',
-        shortcuts: 'Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">Cmd + C</span> Copy / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">Cmd + C</span> Copy / <span class="shortcut-tag">[ ]</span> Rotate / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Light',
         copyMenu: 'Copy',
         copiedToast: '📋 Copied to clipboard!',
-        themeDark: '🌙 Dark'
+        themeDark: '🌙 Dark',
+        shapeCircle: '⚪ Circle',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Settings',
+        ratioPadSquareTitle: 'Expand to square with transparent padding',
+        shapeCircleTitle: 'Circle crop (1:1 with transparent corners)',
+        cropRadiusTitle: 'Corner Radius in pixels (e.g. 20)',
+        rotateLeftTitle: 'Rotate Left 90° ( [ )',
+        rotateRightTitle: 'Rotate Right 90° ( ] )',
+        cropSizeTitle: 'Crop size in pixels (W x H)',
+        ratioLockTitle: 'Lock Aspect Ratio'
       },
       ja: {
         ratioFree: '自由',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ 正方形余白',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 リサイズ',
@@ -1210,15 +1317,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'クイック倍率:',
         cancelBtn: 'キャンセル',
         resizeSaveBtn: '💾 リサイズして保存',
-        shortcuts: 'ショートカット: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> コピー / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> リセット',
+        shortcuts: 'ショートカット: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> コピー / <span class="shortcut-tag">[ ]</span> 回転 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> リセット',
         themeLight: '☀️ ライト',
         copyMenu: 'コピー',
         copiedToast: '📋 クリップボードにコピーしました',
-        themeDark: '🌙 ダーク'
+        themeDark: '🌙 ダーク',
+        shapeCircle: '⚪ 円形',
+        rotateLeft: '⟲ 左90°',
+        rotateRight: '⟳ 右90°',
+        settingsTooltip: '設定',
+        ratioPadSquareTitle: '画像を削らずに透明余白で正方形化',
+        shapeCircleTitle: '丸型切り抜き (1:1 正方形・外側は透明)',
+        cropRadiusTitle: '角丸の半径 (px)',
+        rotateLeftTitle: '左に90°回転 ( [ )',
+        rotateRightTitle: '右に90°回転 ( ] )',
+        cropSizeTitle: 'トリミングサイズ (幅 × 高さ px)',
+        ratioLockTitle: '縦横比を固定 / 解除'
       },
       zh: {
         ratioFree: '自由',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ 正方形留白',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 调整尺寸',
@@ -1241,15 +1360,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: '快速缩放:',
         cancelBtn: '取消',
         resizeSaveBtn: '💾 调整并保存',
-        shortcuts: '快捷键: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> 复制 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> 重置',
+        shortcuts: '快捷键: <span class="shortcut-tag">Cmd + S</span> 保存 / <span class="shortcut-tag">Cmd + C</span> 复制 / <span class="shortcut-tag">[ ]</span> 旋转 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 自由 / <span class="shortcut-tag">R</span> 重置',
         themeLight: '☀️ 浅色',
         copyMenu: '复制',
         copiedToast: '📋 已复制到剪贴板',
-        themeDark: '🌙 深色'
+        themeDark: '🌙 深色',
+        shapeCircle: '⚪ 圆形',
+        rotateLeft: '⟲ 左90°',
+        rotateRight: '⟳ 右90°',
+        settingsTooltip: '设置',
+        ratioPadSquareTitle: '通过透明留白扩展为正方形',
+        shapeCircleTitle: '圆形裁剪 (1:1 比例・外侧透明)',
+        cropRadiusTitle: '圆角半径 (px)',
+        rotateLeftTitle: '向左旋转 90° ( [ )',
+        rotateRightTitle: '向右旋转 90° ( ] )',
+        cropSizeTitle: '裁剪尺寸 (宽 × 高 px)',
+        ratioLockTitle: '锁定 / 解锁宽高比'
       },
       ko: {
         ratioFree: '자유',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ 정사각형 여백',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 크기 변경',
@@ -1272,15 +1403,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: '빠른 배율:',
         cancelBtn: '취소',
         resizeSaveBtn: '💾 크기 변경 및 저장',
-        shortcuts: '단축키: <span class="shortcut-tag">Cmd + S</span> 저장 / <span class="shortcut-tag">Cmd + C</span> 복사 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 자유 / <span class="shortcut-tag">R</span> 초기화',
+        shortcuts: '단축키: <span class="shortcut-tag">Cmd + S</span> 저장 / <span class="shortcut-tag">Cmd + C</span> 복사 / <span class="shortcut-tag">[ ]</span> 회전 / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> 자유 / <span class="shortcut-tag">R</span> 초기화',
         themeLight: '☀️ 라이트',
         copyMenu: '복사',
         copiedToast: '📋 클립보드에 복사되었습니다',
-        themeDark: '🌙 다크'
+        themeDark: '🌙 다크',
+        shapeCircle: '⚪ 원형',
+        rotateLeft: '⟲ 왼쪽 90°',
+        rotateRight: '⟳ 오른쪽 90°',
+        settingsTooltip: '설정',
+        ratioPadSquareTitle: '투명 여백으로 정사각형 확장',
+        shapeCircleTitle: '원형 크롭 (1:1 비율・외곽 투명)',
+        cropRadiusTitle: '모서리 둥글기 반경 (px)',
+        rotateLeftTitle: '왼쪽으로 90° 회전 ( [ )',
+        rotateRightTitle: '오른쪽으로 90° 회전 ( ] )',
+        cropSizeTitle: '크롭 크기 (가로 × 세로 px)',
+        ratioLockTitle: '가로세로 비율 고정 / 해제'
       },
       es: {
         ratioFree: 'Libre',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Cuadrado+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Redimensionar',
@@ -1303,20 +1446,31 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Escala rápida:',
         cancelBtn: 'Cancelar',
         resizeSaveBtn: '💾 Redimensionar y guardar',
-        shortcuts: 'Atajos: <span class="shortcut-tag">Cmd + S</span> Guardar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Atajos: <span class="shortcut-tag">Cmd + S</span> Guardar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">[ ]</span> Rotar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Claro',
         copyMenu: 'Copiar',
         copiedToast: '📋 ¡Copiado al portapapeles!',
-        themeDark: '🌙 Oscuro'
+        themeDark: '🌙 Oscuro',
+        shapeCircle: '⚪ Círculo',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Configuración',
+        ratioPadSquareTitle: 'Expandir a cuadrado con relleno transparente',
+        shapeCircleTitle: 'Recorte circular (1:1 con esquinas transparentes)',
+        cropRadiusTitle: 'Radio de esquina en píxeles (px)',
+        rotateLeftTitle: 'Girar 90° a la izquierda ( [ )',
+        rotateRightTitle: 'Girar 90° a la derecha ( ] )',
+        cropSizeTitle: 'Tamaño de recorte (Ancho x Alto px)',
+        ratioLockTitle: 'Bloquear / desbloquear relación de aspecto'
       },
       de: {
         ratioFree: 'Frei',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Quadrat+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Skalieren',
         resetBtn: '↺ Zurücksetzen',
-        closeBtn: 'Schließen',
         saveBtn: '💾 Speichern & Überschreiben (Cmd+S)',
         savingBtn: 'Wird gespeichert...',
         resizingBtn: 'Skalieren & Speichern...',
@@ -1334,15 +1488,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Schnellskalierung:',
         cancelBtn: 'Abbrechen',
         resizeSaveBtn: '💾 Skalieren & Speichern',
-        shortcuts: 'Kürzel: <span class="shortcut-tag">Cmd + S</span> Speichern / <span class="shortcut-tag">Cmd + C</span> Kopieren / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Frei / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Kürzel: <span class="shortcut-tag">Cmd + S</span> Speichern / <span class="shortcut-tag">Cmd + C</span> Kopieren / <span class="shortcut-tag">[ ]</span> Drehen / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Frei / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Hell',
         copyMenu: 'Kopieren',
         copiedToast: '📋 In die Zwischenablage kopiert!',
-        themeDark: '🌙 Dunkel'
+        themeDark: '🌙 Dunkel',
+        shapeCircle: '⚪ Kreis',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Einstellungen',
+        ratioPadSquareTitle: 'Mit transparentem Rand zum Quadrat erweitern',
+        shapeCircleTitle: 'Kreiszuschnitt (1:1 mit transparenten Ecken)',
+        cropRadiusTitle: 'Eckenradius in Pixeln (px)',
+        rotateLeftTitle: '90° nach links drehen ( [ )',
+        rotateRightTitle: '90° nach rechts drehen ( ] )',
+        cropSizeTitle: 'Zuschnittgröße (B × H px)',
+        ratioLockTitle: 'Seitenverhältnis sperren / entsperren'
       },
       fr: {
         ratioFree: 'Libre',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Carré+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Redimensionner',
@@ -1365,15 +1531,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Échelle rapide :',
         cancelBtn: 'Annuler',
         resizeSaveBtn: '💾 Redimensionner et enregistrer',
-        shortcuts: 'Raccourcis : <span class="shortcut-tag">Cmd + S</span> Enregistrer / <span class="shortcut-tag">Cmd + C</span> Copier / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Raccourcis : <span class="shortcut-tag">Cmd + S</span> Enregistrer / <span class="shortcut-tag">Cmd + C</span> Copier / <span class="shortcut-tag">[ ]</span> Faire pivoter / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Clair',
         copyMenu: 'Copier',
         copiedToast: '📋 Copié dans le presse-papiers !',
-        themeDark: '🌙 Sombre'
+        themeDark: '🌙 Sombre',
+        shapeCircle: '⚪ Cercle',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Paramètres',
+        ratioPadSquareTitle: 'Étendre en carré avec une marge transparente',
+        shapeCircleTitle: 'Recadrage circulaire (1:1 avec coins transparents)',
+        cropRadiusTitle: 'Rayon des coins en pixels (px)',
+        rotateLeftTitle: 'Pivoter de 90° vers la gauche ( [ )',
+        rotateRightTitle: 'Pivoter de 90° vers la droite ( ] )',
+        cropSizeTitle: 'Taille du recadrage (L x H px)',
+        ratioLockTitle: 'Verrouiller / déverrouiller le format'
       },
       vi: {
         ratioFree: 'Tự do',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Vuông+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Đổi cỡ',
@@ -1396,15 +1574,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Tỷ lệ nhanh:',
         cancelBtn: 'Hủy',
         resizeSaveBtn: '💾 Đổi cỡ và lưu',
-        shortcuts: 'Phím tắt: <span class="shortcut-tag">Cmd + S</span> Lưu / <span class="shortcut-tag">Cmd + C</span> Sao chép / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Tự do / <span class="shortcut-tag">R</span> Đặt lại',
+        shortcuts: 'Phím tắt: <span class="shortcut-tag">Cmd + S</span> Lưu / <span class="shortcut-tag">Cmd + C</span> Sao chép / <span class="shortcut-tag">[ ]</span> Xoay / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Tự do / <span class="shortcut-tag">R</span> Đặt lại',
         themeLight: '☀️ Sáng',
         copyMenu: 'Sao chép',
         copiedToast: '📋 Đã sao chép vào khay nhớ tạm!',
-        themeDark: '🌙 Tối'
+        themeDark: '🌙 Tối',
+        shapeCircle: '⚪ Hình tròn',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Cài đặt',
+        ratioPadSquareTitle: 'Mở rộng thành hình vuông với viền trong suốt',
+        shapeCircleTitle: 'Cắt hình tròn (1:1 với các góc trong suốt)',
+        cropRadiusTitle: 'Bán kính bo góc theo pixel (px)',
+        rotateLeftTitle: 'Xoay trái 90° ( [ )',
+        rotateRightTitle: 'Xoay phải 90° ( ] )',
+        cropSizeTitle: 'Kích thước cắt (Rộng x Cao px)',
+        ratioLockTitle: 'Khóa / mở khóa tỷ lệ khung hình'
       },
       hi: {
         ratioFree: 'मुक्त',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ चौकोर+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 आकार बदलें',
@@ -1426,15 +1616,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'त्वरित पैमाना:',
         cancelBtn: 'रद्द करें',
         resizeSaveBtn: '💾 आकार बदलें और सहेजें',
-        shortcuts: 'शॉर्टकट: <span class="shortcut-tag">Cmd + S</span> सेव / <span class="shortcut-tag">Cmd + C</span> कॉपी / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> मुक्त / <span class="shortcut-tag">R</span> रीसेट',
+        shortcuts: 'शॉर्टकट: <span class="shortcut-tag">Cmd + S</span> सेव / <span class="shortcut-tag">Cmd + C</span> कॉपी / <span class="shortcut-tag">[ ]</span> घुमाएँ / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> मुक्त / <span class="shortcut-tag">R</span> रीसेट',
         themeLight: '☀️ लाइट',
         copyMenu: 'कॉपी करें',
         copiedToast: '📋 क्लिपबोर्ड पर कॉपी किया गया!',
-        themeDark: '🌙 डार्क'
+        themeDark: '🌙 डार्क',
+        shapeCircle: '⚪ वृत्त',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'सेटिंग्स',
+        ratioPadSquareTitle: 'पारदर्शी पैडिंग के साथ चौकोर आकार में विस्तार करें',
+        shapeCircleTitle: 'गोलाकार क्रॉप (1:1 पारदर्शी कोनों के साथ)',
+        cropRadiusTitle: 'पिक्सेल में कोने का दायरा (px)',
+        rotateLeftTitle: 'बाएं 90° घुमाएँ ( [ )',
+        rotateRightTitle: 'दाएं 90° घुमाएँ ( ] )',
+        cropSizeTitle: 'क्रॉप आकार (चौड़ाई × ऊंचाई px)',
+        ratioLockTitle: 'पहलू अनुपात लॉक / अनलॉक करें'
       },
       it: {
         ratioFree: 'Libero',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Quadrato+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Ridimensiona',
@@ -1456,15 +1658,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Scala rapida:',
         cancelBtn: 'Annulla',
         resizeSaveBtn: '💾 Ridimensiona e salva',
-        shortcuts: 'Scorciatoie: <span class="shortcut-tag">Cmd + S</span> Salva / <span class="shortcut-tag">Cmd + C</span> Copia / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libero / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Scorciatoie: <span class="shortcut-tag">Cmd + S</span> Salva / <span class="shortcut-tag">Cmd + C</span> Copia / <span class="shortcut-tag">[ ]</span> Ruota / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Libero / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Chiaro',
         copyMenu: 'Copia',
         copiedToast: '📋 Copiato negli appunti!',
-        themeDark: '🌙 Scuro'
+        themeDark: '🌙 Scuro',
+        shapeCircle: '⚪ Cerchio',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Impostazioni',
+        ratioPadSquareTitle: 'Espandi a quadrato con spaziatura trasparente',
+        shapeCircleTitle: 'Ritaglio circolare (1:1 con angoli trasparenti)',
+        cropRadiusTitle: 'Raggio angolo in pixel (px)',
+        rotateLeftTitle: 'Ruota a sinistra di 90° ( [ )',
+        rotateRightTitle: 'Ruota a destra di 90° ( ] )',
+        cropSizeTitle: 'Dimensioni ritaglio (L x A px)',
+        ratioLockTitle: 'Blocca / sblocca proporzioni'
       },
       pt: {
         ratioFree: 'Livre',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Quadrado+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Redimensionar',
@@ -1486,15 +1700,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Escala rápida:',
         cancelBtn: 'Cancelar',
         resizeSaveBtn: '💾 Redimensionar e salvar',
-        shortcuts: 'Atalhos: <span class="shortcut-tag">Cmd + S</span> Salvar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Livre / <span class="shortcut-tag">R</span> Reset',
+        shortcuts: 'Atalhos: <span class="shortcut-tag">Cmd + S</span> Salvar / <span class="shortcut-tag">Cmd + C</span> Copiar / <span class="shortcut-tag">[ ]</span> Girar / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Livre / <span class="shortcut-tag">R</span> Reset',
         themeLight: '☀️ Claro',
         copyMenu: 'Copiar',
         copiedToast: '📋 Copiado para a área de transferência!',
-        themeDark: '🌙 Escuro'
+        themeDark: '🌙 Escuro',
+        shapeCircle: '⚪ Círculo',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Configurações',
+        ratioPadSquareTitle: 'Expandir para quadrado com preenchimento transparente',
+        shapeCircleTitle: 'Corte circular (1:1 com cantos transparentes)',
+        cropRadiusTitle: 'Raio do canto em pixels (px)',
+        rotateLeftTitle: 'Girar 90° para a esquerda ( [ )',
+        rotateRightTitle: 'Girar 90° para a direita ( ] )',
+        cropSizeTitle: 'Tamanho do corte (L × A px)',
+        ratioLockTitle: 'Bloquear / desbloquear proporção'
       },
       ru: {
         ratioFree: 'Свободно',
         ratioSquare: '1:1',
+        ratioPadSquare: '⛶ Квадрат+',
         ratio16_9: '16:9',
         ratio4_3: '4:3',
         resizeBtn: '📐 Изменить размер',
@@ -1516,11 +1742,22 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         quickScale: 'Быстрый масштаб:',
         cancelBtn: 'Отмена',
         resizeSaveBtn: '💾 Изменить размер и сохранить',
-        shortcuts: 'Горячие клавиши: <span class="shortcut-tag">Cmd + S</span> Сохранить / <span class="shortcut-tag">Cmd + C</span> Копировать / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Свободно / <span class="shortcut-tag">R</span> Сброс',
+        shortcuts: 'Горячие клавиши: <span class="shortcut-tag">Cmd + S</span> Сохранить / <span class="shortcut-tag">Cmd + C</span> Копировать / <span class="shortcut-tag">[ ]</span> Повернуть / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Свободно / <span class="shortcut-tag">R</span> Сброс',
         themeLight: '☀️ Светлая',
         copyMenu: 'Копировать',
         copiedToast: '📋 Скопировано в буфер обмена!',
-        themeDark: '🌙 Темная'
+        themeDark: '🌙 Темная',
+        shapeCircle: '⚪ Круг',
+        rotateLeft: '⟲ -90°',
+        rotateRight: '⟳ +90°',
+        settingsTooltip: 'Настройки',
+        ratioPadSquareTitle: 'Расширить до квадрата с прозрачными полями',
+        shapeCircleTitle: 'Круглая обрезка (1:1 с прозрачными углами)',
+        cropRadiusTitle: 'Радиус скругления углов (px)',
+        rotateLeftTitle: 'Повернуть влево на 90° ( [ )',
+        rotateRightTitle: 'Повернуть вправо на 90° ( ] )',
+        cropSizeTitle: 'Размер обрезки (Ш × В px)',
+        ratioLockTitle: 'Заблокировать / разблокировать пропорции'
       }
     };
 
@@ -1538,6 +1775,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
     let dragMode = null;
     let startX = 0, startY = 0;
     let startCrop = { ...crop };
+    let cropShape = 'rect'; // 'rect' | 'circle'
+    let cornerRadius = 0; // in natural pixels
+    const btnShapeCircle = document.getElementById('btnShapeCircle');
+    const cropRadiusInput = document.getElementById('cropRadiusInput');
 
     // Apply initial theme & language
     applyTheme(currentTheme, false);
@@ -1584,8 +1825,47 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
       document.getElementById('ratioFree').innerText = t.ratioFree;
       document.getElementById('ratioSquare').innerText = t.ratioSquare;
+      const padSquareBtn = document.getElementById('ratioPadSquare');
+      if (padSquareBtn) {
+        padSquareBtn.innerText = t.ratioPadSquare || '⛶ Pad 1:1';
+        padSquareBtn.title = t.ratioPadSquareTitle || 'Pad 1:1';
+      }
       document.getElementById('ratio16_9').innerText = t.ratio16_9;
       document.getElementById('ratio4_3').innerText = t.ratio4_3;
+
+      // Tooltips & labels for controls
+      const settingsBtn = document.getElementById('settingsBtn');
+      if (settingsBtn) {
+        settingsBtn.title = t.settingsTooltip || 'Settings';
+      }
+      if (btnShapeCircle) {
+        btnShapeCircle.innerText = t.shapeCircle || '⚪ Circle';
+        btnShapeCircle.title = t.shapeCircleTitle || 'Circle crop';
+      }
+      const cropRadiusWrapper = document.getElementById('cropRadiusWrapper');
+      if (cropRadiusWrapper) {
+        cropRadiusWrapper.title = t.cropRadiusTitle || 'Corner Radius (px)';
+      }
+      if (cropRadiusInput) {
+        cropRadiusInput.title = t.cropRadiusTitle || 'Corner Radius (px)';
+      }
+      const btnRotateLeft = document.getElementById('btnRotateLeft');
+      if (btnRotateLeft) {
+        btnRotateLeft.title = t.rotateLeftTitle || 'Rotate Left 90° ( [ )';
+      }
+      const btnRotateRight = document.getElementById('btnRotateRight');
+      if (btnRotateRight) {
+        btnRotateRight.title = t.rotateRightTitle || 'Rotate Right 90° ( ] )';
+      }
+      const cropSizeControl = document.getElementById('cropSizeControl');
+      if (cropSizeControl) {
+        cropSizeControl.title = t.cropSizeTitle || 'Crop size in pixels (W x H)';
+      }
+      const ratioLockBtnEl = document.getElementById('ratioLockBtn');
+      if (ratioLockBtnEl) {
+        ratioLockBtnEl.title = t.ratioLockTitle || 'Lock Aspect Ratio';
+      }
+
       document.getElementById('btnOpenResize').innerText = t.resizeBtn;
       document.getElementById('btnReset').innerText = t.resetBtn;
       document.getElementById('btnClose').innerText = t.closeBtn;
@@ -1654,6 +1934,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       originalSizeBadge.innerText = t.originalBadge + img.naturalWidth + ' x ' + img.naturalHeight;
       resetZoom();
       resetCrop();
+      window.focus();
     };
 
     window.addEventListener('message', (event) => {
@@ -1669,6 +1950,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         // Wait for image layout to update then reset
         requestAnimationFrame(() => {
           resetCrop();
+          window.focus();
         });
       }
     });
@@ -1677,6 +1959,11 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       const stageW = img.clientWidth;
       const stageH = img.clientHeight;
       if (stageW === 0 || stageH === 0) return;
+
+      cropShape = 'rect';
+      cornerRadius = 0;
+      if (cropRadiusInput) cropRadiusInput.value = 0;
+      if (btnShapeCircle) btnShapeCircle.classList.remove('active');
 
       if (currentRatio === 'free') {
         crop = {
@@ -1691,10 +1978,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         else if (currentRatio === '16:9') targetAspect = 16 / 9;
         else if (currentRatio === '4:3') targetAspect = 4 / 3;
 
-        let w = stageW * 0.9;
+        let w = stageW;
         let h = w / targetAspect;
-        if (h > stageH * 0.9) {
-          h = stageH * 0.9;
+        if (h > stageH) {
+          h = stageH;
           w = h * targetAspect;
         }
         crop = {
@@ -1710,13 +1997,89 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
     function updateRatioButtons() {
       document.getElementById('ratioFree').classList.toggle('active', currentRatio === 'free');
       document.getElementById('ratioSquare').classList.toggle('active', currentRatio === '1:1');
+      document.getElementById('ratioPadSquare').classList.toggle('active', currentRatio === '1:1-pad');
       document.getElementById('ratio16_9').classList.toggle('active', currentRatio === '16:9');
       document.getElementById('ratio4_3').classList.toggle('active', currentRatio === '4:3');
+    }
+
+    function toggleShapeCircle() {
+      if (cropShape === 'circle') {
+        cropShape = 'rect';
+        if (btnShapeCircle) btnShapeCircle.classList.remove('active');
+      } else {
+        cropShape = 'circle';
+        cornerRadius = 0;
+        if (cropRadiusInput) cropRadiusInput.value = 0;
+        if (btnShapeCircle) btnShapeCircle.classList.add('active');
+        setRatio('1:1');
+      }
+      updateUI();
+    }
+
+    function onRadiusInputChange() {
+      let r = parseInt(cropRadiusInput.value, 10);
+      if (isNaN(r) || r < 0) r = 0;
+      cropRadiusInput.value = r;
+      cornerRadius = r;
+      if (r > 0) {
+        cropShape = 'rect';
+        if (btnShapeCircle) btnShapeCircle.classList.remove('active');
+      }
+      updateUI();
+    }
+
+    function rotateImage(deg) {
+      const canvas = document.createElement('canvas');
+      const w = img.naturalWidth;
+      const h = img.naturalHeight;
+      if (!w || !h) return;
+
+      // 90度または-90度回転時は幅と高さが入れ替わる
+      canvas.width = h;
+      canvas.height = w;
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate((deg * Math.PI) / 180);
+      ctx.drawImage(img, -w / 2, -h / 2);
+
+      const rotatedDataUrl = canvas.toDataURL('image/png', 1.0);
+      img.src = rotatedDataUrl;
+    }
+
+    function padToSquare() {
+      const stageW = img.clientWidth;
+      const stageH = img.clientHeight;
+      if (stageW === 0 || stageH === 0) return;
+
+      currentRatio = '1:1-pad';
+      updateRatioButtons();
+
+      const maxSide = Math.max(stageW, stageH);
+      const left = (stageW - maxSide) / 2;
+      const top = (stageH - maxSide) / 2;
+
+      crop = {
+        left: left,
+        top: top,
+        width: maxSide,
+        height: maxSide
+      };
+      updateUI();
     }
 
     function setRatio(ratio) {
       currentRatio = ratio;
       updateRatioButtons();
+
+      if (ratio !== '1:1' && ratio !== '1:1-pad') {
+        if (cropShape === 'circle') {
+          cropShape = 'rect';
+          if (btnShapeCircle) btnShapeCircle.classList.remove('active');
+        }
+      }
 
       if (ratio !== 'free') {
         let targetAspect = 1;
@@ -1724,24 +2087,20 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         else if (ratio === '16:9') targetAspect = 16 / 9;
         else if (ratio === '4:3') targetAspect = 4 / 3;
 
-        const stageW = img.clientWidth;
-        const stageH = img.clientHeight;
-
         let w = crop.width;
-        let h = w / targetAspect;
-        if (h > stageH) {
-          h = stageH;
+        let h = crop.height;
+        const currentAspect = w / h;
+
+        if (currentAspect > targetAspect) {
+          // 現在の枠が目標より横長: 高さを基準に幅を合わせる
           w = h * targetAspect;
-        }
-        if (w > stageW) {
-          w = stageW;
+        } else {
+          // 現在の枠が目標より縦長: 幅を基準に高さを合わせる
           h = w / targetAspect;
         }
 
         let left = crop.left + (crop.width - w) / 2;
         let top = crop.top + (crop.height - h) / 2;
-        left = Math.max(0, Math.min(stageW - w, left));
-        top = Math.max(0, Math.min(stageH - h, top));
 
         crop = { left, top, width: w, height: h };
         updateUI();
@@ -1771,8 +2130,9 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       if (isNaN(targetNaturalW) || targetNaturalW < 1) targetNaturalW = 1;
       if (isNaN(targetNaturalH) || targetNaturalH < 1) targetNaturalH = 1;
 
-      targetNaturalW = Math.min(img.naturalWidth, targetNaturalW);
-      targetNaturalH = Math.min(img.naturalHeight, targetNaturalH);
+      // Allow expanding beyond natural dimensions up to 10000px
+      targetNaturalW = Math.min(10000, targetNaturalW);
+      targetNaturalH = Math.min(10000, targetNaturalH);
 
       let newW = targetNaturalW / scale;
       let newH = targetNaturalH / scale;
@@ -1783,9 +2143,6 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
       let newL = centerX - newW / 2;
       let newT = centerY - newH / 2;
-
-      newL = Math.max(0, Math.min(stageW - newW, newL));
-      newT = Math.max(0, Math.min(stageH - newH, newT));
 
       crop = { left: newL, top: newT, width: newW, height: newH };
       updateUI();
@@ -1801,27 +2158,25 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       cropBox.style.width = crop.width + 'px';
       cropBox.style.height = crop.height + 'px';
 
-      maskTop.style.height = crop.top + 'px';
-
-      maskBottom.style.top = (crop.top + crop.height) + 'px';
-      maskBottom.style.height = (stageH - (crop.top + crop.height)) + 'px';
-
-      maskLeft.style.top = crop.top + 'px';
-      maskLeft.style.height = crop.height + 'px';
-      maskLeft.style.width = crop.left + 'px';
-
-      maskRight.style.top = crop.top + 'px';
-      maskRight.style.height = crop.height + 'px';
-      maskRight.style.left = (crop.left + crop.width) + 'px';
-      maskRight.style.width = (stageW - (crop.left + crop.width)) + 'px';
-
       const scale = img.naturalWidth / stageW;
       const actualW = Math.round(crop.width * scale);
       const actualH = Math.round(crop.height * scale);
       const t = getT();
       cropSizeBadge.innerText = t.cropBadge + actualW + ' x ' + actualH;
 
+      // Update borderRadius for circle or rounded corners
+      if (cropShape === 'circle') {
+        cropBox.style.borderRadius = '50%';
+      } else if (cornerRadius > 0) {
+        cropBox.style.borderRadius = (cornerRadius / scale) + 'px';
+      } else {
+        cropBox.style.borderRadius = '0';
+      }
+
       // Update input fields without stealing focus
+      if (cropRadiusInput && document.activeElement !== cropRadiusInput) {
+        cropRadiusInput.value = cornerRadius;
+      }
       if (document.activeElement !== cropInputW) {
         cropInputW.value = actualW;
       }
@@ -1845,6 +2200,12 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         return;
       }
 
+      // Ensure focus is on window and remove focus from any inputs
+      if (document.activeElement && document.activeElement !== document.body) {
+        document.activeElement.blur();
+      }
+      window.focus();
+
       startX = e.clientX;
       startY = e.clientY;
       startCrop = { ...crop };
@@ -1860,77 +2221,165 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       const stageH = img.clientHeight;
       const minSize = 20;
 
+      const maxExpand = Math.max(stageW, stageH) * 3;
+      const minCoordX = -maxExpand;
+      const maxCoordX = stageW + maxExpand;
+      const minCoordY = -maxExpand;
+      const maxCoordY = stageH + maxExpand;
+
       let { left, top, width, height } = startCrop;
 
       if (dragMode === 'box') {
-        left = Math.max(0, Math.min(stageW - width, left + dx));
-        top = Math.max(0, Math.min(stageH - height, top + dy));
+        left = Math.max(minCoordX, Math.min(maxCoordX - width, left + dx));
+        top = Math.max(minCoordY, Math.min(maxCoordY - height, top + dy));
       } else {
-        let newL = left;
-        let newR = left + width;
-        let newT = top;
-        let newB = top + height;
-
-        if (dragMode.includes('l')) newL = Math.min(newR - minSize, Math.max(0, left + dx));
-        if (dragMode.includes('r')) newR = Math.max(newL + minSize, Math.min(stageW, left + width + dx));
-        if (dragMode.includes('t')) newT = Math.min(newB - minSize, Math.max(0, top + dy));
-        if (dragMode.includes('b')) newB = Math.max(newT + minSize, Math.min(stageH, top + height + dy));
-
         let activeAspect = null;
-        if (currentRatio === '1:1') activeAspect = 1;
+        if (currentRatio === '1:1' || currentRatio === '1:1-pad') activeAspect = 1;
         else if (currentRatio === '16:9') activeAspect = 16 / 9;
         else if (currentRatio === '4:3') activeAspect = 4 / 3;
         else if (isRatioLocked) activeAspect = lockedRatioValue;
 
-        if (activeAspect !== null) {
-          let sideW, sideH;
+        if (activeAspect === null) {
+          // Free mode: allow freely expanding outside image or shrinking along any side
+          let newL = left;
+          let newR = left + width;
+          let newT = top;
+          let newB = top + height;
+
+          if (dragMode.includes('l')) newL = Math.min(newR - minSize, Math.max(minCoordX, left + dx));
+          if (dragMode.includes('r')) newR = Math.max(newL + minSize, Math.min(maxCoordX, left + width + dx));
+          if (dragMode.includes('t')) newT = Math.min(newB - minSize, Math.max(minCoordY, top + dy));
+          if (dragMode.includes('b')) newB = Math.max(newT + minSize, Math.min(maxCoordY, top + height + dy));
+
+          left = newL;
+          top = newT;
+          width = newR - newL;
+          height = newB - newT;
+        } else {
+          // Fixed aspect ratio mode: strictly maintain aspect ratio while smoothly expanding outside or shrinking
+          let newL = left;
+          let newR = left + width;
+          let newT = top;
+          let newB = top + height;
+
           if (dragMode === 't' || dragMode === 'b') {
-            sideH = newB - newT;
-            sideW = sideH * activeAspect;
-            const midX = (newL + newR) / 2;
-            newL = midX - sideW / 2;
-            newR = midX + sideW / 2;
+            const midX = left + width / 2;
+            const maxHalfW = Math.min(midX - minCoordX, maxCoordX - midX);
+            const maxW = maxHalfW * 2;
+            let h;
+            if (dragMode === 't') {
+              const anchorB = top + height;
+              const maxH = anchorB - minCoordY;
+              const maxAllowedH = Math.min(maxH, maxW / activeAspect);
+              h = Math.max(minSize, Math.min(maxAllowedH, height - dy));
+              newT = anchorB - h;
+              newB = anchorB;
+            } else {
+              const anchorT = top;
+              const maxH = maxCoordY - anchorT;
+              const maxAllowedH = Math.min(maxH, maxW / activeAspect);
+              h = Math.max(minSize, Math.min(maxAllowedH, height + dy));
+              newT = anchorT;
+              newB = anchorT + h;
+            }
+            const w = h * activeAspect;
+            newL = midX - w / 2;
+            newR = midX + w / 2;
           } else if (dragMode === 'l' || dragMode === 'r') {
-            sideW = newR - newL;
-            sideH = sideW / activeAspect;
-            const midY = (newT + newB) / 2;
-            newT = midY - sideH / 2;
-            newB = midY + sideH / 2;
+            const midY = top + height / 2;
+            const maxHalfH = Math.min(midY - minCoordY, maxCoordY - midY);
+            const maxH = maxHalfH * 2;
+            let w;
+            if (dragMode === 'l') {
+              const anchorR = left + width;
+              const maxW = anchorR - minCoordX;
+              const maxAllowedW = Math.min(maxW, maxH * activeAspect);
+              w = Math.max(minSize, Math.min(maxAllowedW, width - dx));
+              newL = anchorR - w;
+              newR = anchorR;
+            } else {
+              const anchorL = left;
+              const maxW = maxCoordX - anchorL;
+              const maxAllowedW = Math.min(maxW, maxH * activeAspect);
+              w = Math.max(minSize, Math.min(maxAllowedW, width + dx));
+              newL = anchorL;
+              newR = anchorL + w;
+            }
+            const h = w / activeAspect;
+            newT = midY - h / 2;
+            newB = midY + h / 2;
           } else {
-            // Corners
-            let wCandidate = newR - newL;
-            let hCandidate = newB - newT;
-            let chosenW = Math.max(wCandidate, hCandidate * activeAspect);
-            let chosenH = chosenW / activeAspect;
+            // Corner handles: tl, tr, bl, br
+            let anchorX, anchorY, rawW, rawH, maxW, maxH;
+            if (dragMode === 'br') {
+              anchorX = left;
+              anchorY = top;
+              rawW = width + dx;
+              rawH = height + dy;
+              maxW = maxCoordX - anchorX;
+              maxH = maxCoordY - anchorY;
+            } else if (dragMode === 'bl') {
+              anchorX = left + width;
+              anchorY = top;
+              rawW = width - dx;
+              rawH = height + dy;
+              maxW = anchorX - minCoordX;
+              maxH = maxCoordY - anchorY;
+            } else if (dragMode === 'tr') {
+              anchorX = left;
+              anchorY = top + height;
+              rawW = width + dx;
+              rawH = height - dy;
+              maxW = maxCoordX - anchorX;
+              maxH = anchorY - minCoordY;
+            } else if (dragMode === 'tl') {
+              anchorX = left + width;
+              anchorY = top + height;
+              rawW = width - dx;
+              rawH = height - dy;
+              maxW = anchorX - minCoordX;
+              maxH = anchorY - minCoordY;
+            }
 
-            if (dragMode === 'tl') { newL = newR - chosenW; newT = newB - chosenH; }
-            if (dragMode === 'tr') { newR = newL + chosenW; newT = newB - chosenH; }
-            if (dragMode === 'bl') { newL = newR - chosenW; newB = newT + chosenH; }
-            if (dragMode === 'br') { newR = newL + chosenW; newB = newT + chosenH; }
+            let chosenW;
+            if (Math.abs(rawW - width) > Math.abs(rawH - height) * activeAspect) {
+              chosenW = rawW;
+            } else {
+              chosenW = rawH * activeAspect;
+            }
+
+            const maxAllowedW = Math.min(maxW, maxH * activeAspect);
+            const w = Math.max(minSize, Math.min(maxAllowedW, chosenW));
+            const h = w / activeAspect;
+
+            if (dragMode === 'br') {
+              newL = anchorX;
+              newR = anchorX + w;
+              newT = anchorY;
+              newB = anchorY + h;
+            } else if (dragMode === 'bl') {
+              newL = anchorX - w;
+              newR = anchorX;
+              newT = anchorY;
+              newB = anchorY + h;
+            } else if (dragMode === 'tr') {
+              newL = anchorX;
+              newR = anchorX + w;
+              newT = anchorY - h;
+              newB = anchorY;
+            } else if (dragMode === 'tl') {
+              newL = anchorX - w;
+              newR = anchorX;
+              newT = anchorY - h;
+              newB = anchorY;
+            }
           }
 
-          if (newL < 0) {
-            newR = Math.min(stageW, newR - newL);
-            newL = 0;
-          }
-          if (newR > stageW) {
-            newL = Math.max(0, newL - (newR - stageW));
-            newR = stageW;
-          }
-          if (newT < 0) {
-            newB = Math.min(stageH, newB - newT);
-            newT = 0;
-          }
-          if (newB > stageH) {
-            newT = Math.max(0, newT - (newB - stageH));
-            newB = stageH;
-          }
+          left = newL;
+          top = newT;
+          width = newR - newL;
+          height = newB - newT;
         }
-
-        left = Math.max(0, newL);
-        top = Math.max(0, newT);
-        width = Math.max(minSize, Math.min(stageW - left, newR - left));
-        height = Math.max(minSize, Math.min(stageH - top, newB - top));
       }
 
       crop = { left, top, width, height };
@@ -1938,13 +2387,44 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
     });
 
     window.addEventListener('mouseup', () => {
+      if (isDragging) {
+        window.focus();
+      }
       isDragging = false;
       dragMode = null;
     });
 
+    // Double click on crop box, masks, or stage to expand/maximize crop box to full
+    window.addEventListener('dblclick', (e) => {
+      if (e.target.closest('.modal-content') || e.target.closest('.toolbar') || e.target.closest('.footer-hint') || e.target.closest('.ctx-menu')) return;
+      if (e.target.closest('.crop-box') || e.target.closest('.crop-mask') || e.target.closest('.stage') || e.target.closest('#cropImage')) {
+        resetCrop();
+      }
+    });
+
     // Shortcuts
     window.addEventListener('keydown', (e) => {
-      // Don't trigger shortcuts if focus is inside an input
+      const isCmdOrCtrl = e.metaKey || e.ctrlKey;
+
+      // Save and Copy shortcuts should always work, even if an input was focused
+      if (isCmdOrCtrl && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (document.activeElement && ['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+          document.activeElement.blur();
+        }
+        saveAndOverwrite();
+        return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'c') {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+          return;
+        }
+        e.preventDefault();
+        copyCroppedImage();
+        return;
+      }
+
+      // Don't trigger single-letter shortcuts (1, F, P, R, etc.) if focus is inside an input
       if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
         if (e.key === 'Escape') {
           document.activeElement.blur();
@@ -1952,19 +2432,13 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         return;
       }
 
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        saveAndOverwrite();
-      } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
-        e.preventDefault();
-        copyCroppedImage();
-      } else if ((e.metaKey || e.ctrlKey) && (e.key === '=' || e.key === '+')) {
+      if (isCmdOrCtrl && (e.key === '=' || e.key === '+')) {
         e.preventDefault();
         zoomChange(0.1);
-      } else if ((e.metaKey || e.ctrlKey) && (e.key === '-' || e.key === '_')) {
+      } else if (isCmdOrCtrl && (e.key === '-' || e.key === '_')) {
         e.preventDefault();
         zoomChange(-0.1);
-      } else if ((e.metaKey || e.ctrlKey) && e.key === '0') {
+      } else if (isCmdOrCtrl && e.key === '0') {
         e.preventDefault();
         resetZoom();
       } else if (e.key === 'Escape') {
@@ -1978,10 +2452,16 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         }
       } else if (e.key === '1') {
         setRatio('1:1');
+      } else if (e.key.toLowerCase() === 'p') {
+        padToSquare();
       } else if (e.key.toLowerCase() === 'f') {
         setRatio('free');
       } else if (e.key.toLowerCase() === 'r') {
         resetCrop();
+      } else if (e.key === '[') {
+        rotateImage(-90);
+      } else if (e.key === ']') {
+        rotateImage(90);
       }
     });
 
@@ -2055,7 +2535,46 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
 
-      ctx.drawImage(img, naturalX, naturalY, naturalW, naturalH, 0, 0, naturalW, naturalH);
+      // Ensure transparent background (RGBA 0,0,0,0)
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Clip circle or rounded corners
+      if (cropShape === 'circle') {
+        ctx.beginPath();
+        ctx.ellipse(
+          canvas.width / 2,
+          canvas.height / 2,
+          canvas.width / 2,
+          canvas.height / 2,
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.clip();
+      } else if (cornerRadius > 0) {
+        const r = Math.min(cornerRadius, canvas.width / 2, canvas.height / 2);
+        ctx.beginPath();
+        if (ctx.roundRect) {
+          ctx.roundRect(0, 0, canvas.width, canvas.height, r);
+        } else {
+          ctx.moveTo(r, 0);
+          ctx.arcTo(canvas.width, 0, canvas.width, canvas.height, r);
+          ctx.arcTo(canvas.width, canvas.height, 0, canvas.height, r);
+          ctx.arcTo(0, canvas.height, 0, 0, r);
+          ctx.arcTo(0, 0, canvas.width, 0, r);
+          ctx.closePath();
+        }
+        ctx.clip();
+      }
+
+      // Draw original image relative to crop position
+      // If crop is expanded outside (e.g. naturalX < 0), drawX becomes positive, creating transparent margins
+      const drawX = -naturalX;
+      const drawY = -naturalY;
+      const drawW = img.naturalWidth;
+      const drawH = img.naturalHeight;
+
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
       return canvas;
     }
 
