@@ -90,10 +90,13 @@ class SimpleImageCropEditorProvider {
           const buffer = Buffer.from(rawBase64, 'base64');
           fs.writeFileSync(filePath, buffer);
           vscode.window.showInformationMessage(`✅ Overwritten: ${fileName} (${buffer.length} bytes)`);
-          
+
           // Re-feed new image to webview so it displays the updated crop immediately
           base64Data = buffer.toString('base64');
-          webviewPanel.webview.postMessage({ command: 'updated', imageSrc: `data:${mimeType};base64,${base64Data}` });
+          webviewPanel.webview.postMessage({
+            command: 'updated',
+            imageSrc: `data:${mimeType};base64,${base64Data}`
+          });
         } catch (err) {
           vscode.window.showErrorMessage(`Failed to overwrite file: ${err.message}`);
         }
@@ -114,6 +117,80 @@ function getWebviewContent(fileName, mimeType, base64Data) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Crop: ${fileName}</title>
   <style>
+    :root {
+      --bg-app: #181818;
+      --bg-toolbar: #252526;
+      --bg-footer: #202020;
+      --border-color: #3c3c3c;
+      --text-main: #cccccc;
+      --text-title: #ffffff;
+      --text-muted: #888888;
+      --badge-bg: #333333;
+      --badge-text: #9cdcfe;
+      --btn-group-bg: #2d2d2d;
+      --btn-toggle-color: #aaaaaa;
+      --btn-toggle-hover: #3d3d3d;
+      --btn-toggle-active-bg: #0e639c;
+      --btn-toggle-active-color: #ffffff;
+      --btn-sec-bg: #383838;
+      --btn-sec-hover: #4a4a4a;
+      --btn-sec-text: #e0e0e0;
+      --btn-pri-bg: #107c41;
+      --btn-pri-hover: #13914c;
+      --btn-pri-text: #ffffff;
+      --input-bg: #1e1e1e;
+      --input-border: #4a4a4a;
+      --input-text: #ffffff;
+      --checker-1: #222222;
+      --checker-2: transparent;
+      --mask-color: rgba(10, 10, 10, 0.72);
+      --crop-outline: rgba(255, 255, 255, 0.9);
+      --handle-corner-border: #000000;
+      --handle-corner-shadow: #ffffff;
+      --handle-bar-bg: #000000;
+      --handle-bar-shadow: #ffffff;
+      --modal-bg: #252526;
+      --modal-overlay: rgba(0, 0, 0, 0.65);
+      --modal-box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+    }
+
+    body.theme-light {
+      --bg-app: #e9e9e9;
+      --bg-toolbar: #f3f3f3;
+      --bg-footer: #eaeaea;
+      --border-color: #cccccc;
+      --text-main: #333333;
+      --text-title: #111111;
+      --text-muted: #666666;
+      --badge-bg: #e0e0e0;
+      --badge-text: #055080;
+      --btn-group-bg: #e0e0e0;
+      --btn-toggle-color: #555555;
+      --btn-toggle-hover: #d0d0d0;
+      --btn-toggle-active-bg: #0078d4;
+      --btn-toggle-active-color: #ffffff;
+      --btn-sec-bg: #e2e2e2;
+      --btn-sec-hover: #d4d4d4;
+      --btn-sec-text: #222222;
+      --btn-pri-bg: #107c41;
+      --btn-pri-hover: #13914c;
+      --btn-pri-text: #ffffff;
+      --input-bg: #ffffff;
+      --input-border: #b8b8b8;
+      --input-text: #111111;
+      --checker-1: #d2d2d2;
+      --checker-2: transparent;
+      --mask-color: rgba(255, 255, 255, 0.65);
+      --crop-outline: #0078d4;
+      --handle-corner-border: #005a9e;
+      --handle-corner-shadow: #ffffff;
+      --handle-bar-bg: #005a9e;
+      --handle-bar-shadow: #ffffff;
+      --modal-bg: #ffffff;
+      --modal-overlay: rgba(0, 0, 0, 0.35);
+      --modal-box-shadow: 0 12px 36px rgba(0, 0, 0, 0.25);
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -121,100 +198,187 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       user-select: none;
     }
     body {
-      background-color: #1e1e1e;
-      color: #cccccc;
+      background-color: var(--bg-app);
+      color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
       height: 100vh;
       overflow: hidden;
+      transition: background-color 0.2s, color 0.2s;
     }
 
     /* Toolbar */
     .toolbar {
-      background: #252526;
-      border-bottom: 1px solid #3c3c3c;
-      padding: 8px 16px;
+      background: var(--bg-toolbar);
+      border-bottom: 1px solid var(--border-color);
+      padding: 6px 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 12px;
+      gap: 10px;
       z-index: 100;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      flex-wrap: wrap;
     }
     .toolbar-left, .toolbar-center, .toolbar-right {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-wrap: wrap;
     }
     .file-title {
       font-weight: 600;
-      font-size: 14px;
-      color: #ffffff;
+      font-size: 13px;
+      color: var(--text-title);
       white-space: nowrap;
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .badge {
-      background: #333333;
-      color: #9cdcfe;
-      padding: 3px 8px;
+      background: var(--badge-bg);
+      color: var(--badge-text);
+      padding: 3px 7px;
       border-radius: 4px;
-      font-size: 12px;
+      font-size: 11px;
       font-family: monospace;
+      white-space: nowrap;
     }
+    .badge-crop {
+      color: #107c41;
+      font-weight: 600;
+    }
+    body.theme-light .badge-crop {
+      color: #0b6032;
+    }
+
     .btn-group {
-      display: flex;
-      background: #333;
+      display: inline-flex;
+      background: var(--btn-group-bg);
       border-radius: 4px;
       overflow: hidden;
-      border: 1px solid #444;
+      border: 1px solid var(--border-color);
     }
     .btn-toggle {
       background: transparent;
       border: none;
-      color: #aaa;
-      padding: 5px 12px;
-      font-size: 12px;
+      color: var(--btn-toggle-color);
+      padding: 4px 9px;
+      font-size: 11px;
       cursor: pointer;
       transition: background 0.15s, color 0.15s;
     }
     .btn-toggle:hover {
-      background: #444;
-      color: #fff;
+      background: var(--btn-toggle-hover);
     }
     .btn-toggle.active {
-      background: #0e639c;
-      color: #fff;
+      background: var(--btn-toggle-active-bg);
+      color: var(--btn-toggle-active-color);
       font-weight: 600;
     }
-    .btn {
-      padding: 6px 14px;
+
+    .crop-size-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--btn-group-bg);
+      padding: 2px 6px;
       border-radius: 4px;
-      font-size: 12px;
-      font-weight: 500;
+      border: 1px solid var(--border-color);
+      font-size: 11px;
+    }
+    .size-input-wrapper {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .size-input-wrapper label {
+      color: var(--text-muted);
+      font-size: 10px;
+      font-weight: 600;
+    }
+    .size-input {
+      width: 52px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--input-text);
+      font-size: 11px;
+      font-family: monospace;
+      padding: 2px 4px;
+      border-radius: 3px;
+      text-align: right;
+      outline: none;
+      user-select: text;
+    }
+    .size-input:focus {
+      border-color: #0078d4;
+    }
+    .lock-btn {
+      background: transparent;
       border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 2px 4px;
+      border-radius: 3px;
+      display: inline-flex;
+      align-items: center;
+      transition: color 0.15s, background 0.15s;
+    }
+    .lock-btn:hover {
+      background: var(--btn-toggle-hover);
+    }
+    .lock-btn.locked {
+      color: #0e639c;
+    }
+    body.theme-light .lock-btn.locked {
+      color: #0078d4;
+    }
+
+    .btn {
+      padding: 5px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      border: 1px solid transparent;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: background 0.15s, transform 0.05s;
+      gap: 5px;
+      transition: background 0.15s, transform 0.05s, border-color 0.15s;
+      white-space: nowrap;
     }
     .btn:active {
       transform: scale(0.98);
     }
     .btn-secondary {
-      background: #3c3c3c;
-      color: #e0e0e0;
+      background: var(--btn-sec-bg);
+      color: var(--btn-sec-text);
+      border-color: var(--border-color);
     }
     .btn-secondary:hover {
-      background: #4a4a4a;
+      background: var(--btn-sec-hover);
     }
     .btn-primary {
-      background: #107c41; /* Excel Green */
-      color: #ffffff;
+      background: var(--btn-pri-bg);
+      color: var(--btn-pri-text);
       font-weight: 600;
     }
     .btn-primary:hover {
-      background: #13914c;
+      background: var(--btn-pri-hover);
+    }
+    .btn-theme {
+      background: var(--btn-sec-bg);
+      color: var(--btn-sec-text);
+      border: 1px solid var(--border-color);
+      padding: 5px 9px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-theme:hover {
+      background: var(--btn-sec-hover);
     }
 
     /* Workspace */
@@ -225,21 +389,22 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       align-items: center;
       justify-content: center;
       position: relative;
-      background: #181818;
+      background: var(--bg-app);
       background-image:
-        linear-gradient(45deg, #222 25%, transparent 25%),
-        linear-gradient(-45deg, #222 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #222 75%),
-        linear-gradient(-45deg, transparent 75%, #222 75%);
+        linear-gradient(45deg, var(--checker-1) 25%, var(--checker-2) 25%),
+        linear-gradient(-45deg, var(--checker-1) 25%, var(--checker-2) 25%),
+        linear-gradient(45deg, var(--checker-2) 75%, var(--checker-1) 75%),
+        linear-gradient(-45deg, var(--checker-2) 75%, var(--checker-1) 75%);
       background-size: 20px 20px;
       background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-      padding: 40px;
+      padding: 30px;
+      transition: background-color 0.2s;
     }
 
     /* Stage Container */
     .stage {
       position: relative;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
       display: inline-block;
     }
 
@@ -247,17 +412,17 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     #sourceImg {
       display: block;
       max-width: 80vw;
-      max-height: calc(80vh - 60px);
+      max-height: calc(80vh - 70px);
       width: auto;
       height: auto;
       pointer-events: none;
       image-rendering: auto;
     }
 
-    /* Crop Mask (Dark Outer Overlay) */
+    /* Crop Mask */
     .mask {
       position: absolute;
-      background: rgba(30, 30, 30, 0.68);
+      background: var(--mask-color);
       pointer-events: none;
       transition: background 0.1s;
     }
@@ -270,7 +435,7 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     .crop-box {
       position: absolute;
       box-sizing: border-box;
-      outline: 1px dashed rgba(255, 255, 255, 0.85);
+      outline: 1.5px dashed var(--crop-outline);
       cursor: move;
     }
 
@@ -282,23 +447,23 @@ function getWebviewContent(fileName, mimeType, base64Data) {
 
     /* Corner L-Handles */
     .handle-corner {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       box-sizing: border-box;
     }
     .handle-corner::after {
       content: '';
       position: absolute;
-      width: 36px;
-      height: 36px;
+      width: 32px;
+      height: 32px;
     }
 
     .handle-tl {
       top: -3px;
       left: -3px;
-      border-top: 5px solid #000;
-      border-left: 5px solid #000;
-      filter: drop-shadow(0 0 1px #fff);
+      border-top: 5px solid var(--handle-corner-border);
+      border-left: 5px solid var(--handle-corner-border);
+      filter: drop-shadow(0 0 1px var(--handle-corner-shadow));
       cursor: nwse-resize;
     }
     .handle-tl::after { top: -8px; left: -8px; }
@@ -306,9 +471,9 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     .handle-tr {
       top: -3px;
       right: -3px;
-      border-top: 5px solid #000;
-      border-right: 5px solid #000;
-      filter: drop-shadow(0 0 1px #fff);
+      border-top: 5px solid var(--handle-corner-border);
+      border-right: 5px solid var(--handle-corner-border);
+      filter: drop-shadow(0 0 1px var(--handle-corner-shadow));
       cursor: nesw-resize;
     }
     .handle-tr::after { top: -8px; right: -8px; }
@@ -316,9 +481,9 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     .handle-bl {
       bottom: -3px;
       left: -3px;
-      border-bottom: 5px solid #000;
-      border-left: 5px solid #000;
-      filter: drop-shadow(0 0 1px #fff);
+      border-bottom: 5px solid var(--handle-corner-border);
+      border-left: 5px solid var(--handle-corner-border);
+      filter: drop-shadow(0 0 1px var(--handle-corner-shadow));
       cursor: nesw-resize;
     }
     .handle-bl::after { bottom: -8px; left: -8px; }
@@ -326,19 +491,19 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     .handle-br {
       bottom: -3px;
       right: -3px;
-      border-bottom: 5px solid #000;
-      border-right: 5px solid #000;
-      filter: drop-shadow(0 0 1px #fff);
+      border-bottom: 5px solid var(--handle-corner-border);
+      border-right: 5px solid var(--handle-corner-border);
+      filter: drop-shadow(0 0 1px var(--handle-corner-shadow));
       cursor: nwse-resize;
     }
     .handle-br::after { bottom: -8px; right: -8px; }
 
     /* Edge Bar Handles */
     .handle-bar-h {
-      width: 28px;
+      width: 26px;
       height: 5px;
-      background: #000;
-      box-shadow: 0 0 1px 1px #fff;
+      background: var(--handle-bar-bg);
+      box-shadow: 0 0 1px 1px var(--handle-bar-shadow);
       cursor: ns-resize;
     }
     .handle-bar-h::after {
@@ -346,8 +511,8 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       position: absolute;
       top: -12px;
       left: -6px;
-      width: 40px;
-      height: 28px;
+      width: 38px;
+      height: 26px;
     }
 
     .handle-t {
@@ -363,9 +528,9 @@ function getWebviewContent(fileName, mimeType, base64Data) {
 
     .handle-bar-v {
       width: 5px;
-      height: 28px;
-      background: #000;
-      box-shadow: 0 0 1px 1px #fff;
+      height: 26px;
+      background: var(--handle-bar-bg);
+      box-shadow: 0 0 1px 1px var(--handle-bar-shadow);
       cursor: ew-resize;
     }
     .handle-bar-v::after {
@@ -373,8 +538,8 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       position: absolute;
       top: -6px;
       left: -12px;
-      width: 28px;
-      height: 40px;
+      width: 26px;
+      height: 38px;
     }
 
     .handle-l {
@@ -388,44 +553,194 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       transform: translateY(-50%);
     }
 
-    /* Footer Hint */
-    .footer-hint {
-      background: #252526;
-      border-top: 1px solid #333;
-      padding: 5px 16px;
-      font-size: 11px;
-      color: #888;
+    /* Modal (Resize) */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--modal-overlay);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open {
+      display: flex;
+    }
+    .modal-content {
+      background: var(--modal-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 18px 22px;
+      width: 340px;
+      box-shadow: var(--modal-box-shadow);
+      color: var(--text-main);
+    }
+    .modal-header {
       display: flex;
       justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 8px;
+    }
+    .modal-header h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-title);
+    }
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close-btn:hover {
+      color: var(--text-title);
+    }
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .form-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 12px;
+    }
+    .form-row label {
+      color: var(--text-main);
+      font-weight: 500;
+    }
+    .form-row input[type="number"] {
+      width: 90px;
+      padding: 4px 6px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      color: var(--input-text);
+      border-radius: 4px;
+      font-family: monospace;
+      text-align: right;
+      outline: none;
+    }
+    .form-row input[type="number"]:focus {
+      border-color: #0078d4;
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .preset-scale-group {
+      display: flex;
+      gap: 4px;
+      margin-top: 4px;
+    }
+    .btn-preset {
+      flex: 1;
+      padding: 4px 0;
+      font-size: 10px;
+      background: var(--btn-sec-bg);
+      border: 1px solid var(--border-color);
+      color: var(--btn-sec-text);
+      border-radius: 4px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .btn-preset:hover {
+      background: var(--btn-sec-hover);
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 18px;
+      border-top: 1px solid var(--border-color);
+      padding-top: 12px;
+    }
+
+    /* Footer Hint */
+    .footer-hint {
+      background: var(--bg-footer);
+      border-top: 1px solid var(--border-color);
+      padding: 4px 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background-color 0.2s;
     }
     .shortcut-tag {
-      background: #333;
-      color: #ccc;
+      background: var(--badge-bg);
+      color: var(--text-main);
       padding: 1px 5px;
       border-radius: 3px;
-      margin: 0 3px;
+      margin: 0 2px;
+      font-size: 10px;
     }
   </style>
 </head>
-<body>
+<body class="theme-dark">
 
   <!-- Toolbar -->
   <div class="toolbar">
     <div class="toolbar-left">
-      <span class="file-title">${fileName}</span>
+      <span class="file-title" title="${fileName}">${fileName}</span>
       <span class="badge" id="originalSizeBadge">Original: -- x --</span>
-      <span class="badge" id="cropSizeBadge" style="color: #4ec9b0;">Crop: -- x --</span>
+      <span class="badge badge-crop" id="cropSizeBadge">Crop: -- x --</span>
     </div>
 
     <div class="toolbar-center">
+      <!-- Aspect Ratio Presets -->
       <div class="btn-group">
-        <button class="btn-toggle active" id="ratioFree" onclick="setRatio('free')">Free</button>
-        <button class="btn-toggle" id="ratioSquare" onclick="setRatio('1:1')">1:1 (Square)</button>
+        <button class="btn-toggle active" id="ratioFree" onclick="setRatio('free')" title="Free crop">Free</button>
+        <button class="btn-toggle" id="ratioSquare" onclick="setRatio('1:1')" title="Square (1:1)">1:1</button>
+        <button class="btn-toggle" id="ratio16_9" onclick="setRatio('16:9')" title="16:9 Landscape">16:9</button>
+        <button class="btn-toggle" id="ratio4_3" onclick="setRatio('4:3')" title="4:3 Landscape">4:3</button>
       </div>
-      <button class="btn btn-secondary" onclick="resetCrop()">↺ Reset</button>
+
+      <!-- Numerical Crop Size Direct Input -->
+      <div class="crop-size-control" title="Crop size in pixels (W x H)">
+        <div class="size-input-wrapper">
+          <label for="cropInputW">W:</label>
+          <input type="number" id="cropInputW" class="size-input" min="1" step="1" onchange="onCropInputChange()">
+        </div>
+        <span>×</span>
+        <div class="size-input-wrapper">
+          <label for="cropInputH">H:</label>
+          <input type="number" id="cropInputH" class="size-input" min="1" step="1" onchange="onCropInputChange()">
+        </div>
+        <button id="ratioLockBtn" class="lock-btn" onclick="toggleRatioLock()" title="Lock Aspect Ratio">🔓</button>
+      </div>
+
+      <!-- Resize Image Button -->
+      <button class="btn btn-secondary" onclick="openResizeModal()" title="Resize image dimensions">
+        📐 Resize
+      </button>
+
+      <!-- Reset Button -->
+      <button class="btn btn-secondary" onclick="resetCrop()" title="Reset crop box to full image">
+        ↺ Reset
+      </button>
     </div>
 
     <div class="toolbar-right">
+      <!-- Theme Toggle Button -->
+      <button class="btn-theme" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Light/Dark Theme">
+        ☀️ Light
+      </button>
+
       <button class="btn btn-secondary" onclick="cancel()">Close</button>
       <button class="btn btn-primary" id="saveBtn" onclick="saveAndOverwrite()">
         💾 Save & Overwrite (Cmd+S)
@@ -461,12 +776,56 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     </div>
   </div>
 
+  <!-- Resize Image Modal -->
+  <div class="modal-overlay" id="resizeModal" onclick="onModalOverlayClick(event)">
+    <div class="modal-content" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <h3>📐 Resize Image</h3>
+        <button class="modal-close-btn" onclick="closeResizeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>Current Size:</label>
+          <span id="modalCurrentSize" style="font-family: monospace; font-size: 11px;">-- x --</span>
+        </div>
+        <div class="form-row">
+          <label for="resizeWidth">New Width (px):</label>
+          <input type="number" id="resizeWidth" min="1" max="10000" oninput="onResizeWidthInput()">
+        </div>
+        <div class="form-row">
+          <label for="resizeHeight">New Height (px):</label>
+          <input type="number" id="resizeHeight" min="1" max="10000" oninput="onResizeHeightInput()">
+        </div>
+        <label class="checkbox-row">
+          <input type="checkbox" id="resizeKeepRatio" checked onchange="onKeepRatioChange()">
+          <span>Maintain aspect ratio</span>
+        </label>
+        <div>
+          <span style="font-size: 11px; color: var(--text-muted);">Quick Scale:</span>
+          <div class="preset-scale-group">
+            <button class="btn-preset" onclick="applyPresetScale(0.25)">25%</button>
+            <button class="btn-preset" onclick="applyPresetScale(0.5)">50%</button>
+            <button class="btn-preset" onclick="applyPresetScale(0.75)">75%</button>
+            <button class="btn-preset" onclick="applyPresetScale(1.0)">100%</button>
+            <button class="btn-preset" onclick="applyPresetScale(1.5)">150%</button>
+            <button class="btn-preset" onclick="applyPresetScale(2.0)">200%</button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeResizeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="executeResizeAndSave()">💾 Resize & Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer Hint -->
   <div class="footer-hint">
     <div>
-      💡 <b>Tips:</b> Drag corner L-handles or edge bars to adjust crop area. Drag inside the box to move.
+      💡 <b>Tips:</b> Drag corners or edges to crop. Drag inside box to move. Direct edit W/H px in toolbar.
     </div>
     <div>
-      Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">1</span> Square / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset / <span class="shortcut-tag">Esc</span> Close
+      Shortcuts: <span class="shortcut-tag">Cmd + S</span> Save / <span class="shortcut-tag">1</span> 1:1 / <span class="shortcut-tag">F</span> Free / <span class="shortcut-tag">R</span> Reset / <span class="shortcut-tag">Esc</span> Close
     </div>
   </div>
 
@@ -482,13 +841,51 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     const originalSizeBadge = document.getElementById('originalSizeBadge');
     const cropSizeBadge = document.getElementById('cropSizeBadge');
     const saveBtn = document.getElementById('saveBtn');
+    const themeToggleBtn = document.getElementById('themeToggleBtn');
+    const cropInputW = document.getElementById('cropInputW');
+    const cropInputH = document.getElementById('cropInputH');
+    const ratioLockBtn = document.getElementById('ratioLockBtn');
 
-    let currentRatio = 'free'; // 'free' or '1:1'
+    // Modal elements
+    const resizeModal = document.getElementById('resizeModal');
+    const modalCurrentSize = document.getElementById('modalCurrentSize');
+    const resizeWidth = document.getElementById('resizeWidth');
+    const resizeHeight = document.getElementById('resizeHeight');
+    const resizeKeepRatio = document.getElementById('resizeKeepRatio');
+
+    // State
+    const savedState = vscode.getState() || {};
+    let currentTheme = savedState.theme || 'dark';
+    let currentRatio = 'free'; // 'free', '1:1', '16:9', '4:3'
+    let isRatioLocked = false;
+    let lockedRatioValue = 1; // W / H
+
     let crop = { left: 0, top: 0, width: 100, height: 100 };
     let isDragging = false;
-    let dragMode = null; // 'box' or 'tl', 'tr', 'bl', 'br', 't', 'b', 'l', 'r'
+    let dragMode = null;
     let startX = 0, startY = 0;
     let startCrop = { ...crop };
+
+    // Apply saved theme
+    applyTheme(currentTheme);
+
+    function applyTheme(theme) {
+      currentTheme = theme;
+      if (theme === 'light') {
+        document.body.classList.add('theme-light');
+        document.body.classList.remove('theme-dark');
+        themeToggleBtn.innerText = '🌙 Dark';
+      } else {
+        document.body.classList.add('theme-dark');
+        document.body.classList.remove('theme-light');
+        themeToggleBtn.innerText = '☀️ Light';
+      }
+      vscode.setState({ ...vscode.getState(), theme: currentTheme });
+    }
+
+    function toggleTheme() {
+      applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    }
 
     img.onload = () => {
       originalSizeBadge.innerText = \`Original: \${img.naturalWidth} x \${img.naturalHeight}\`;
@@ -501,52 +898,132 @@ function getWebviewContent(fileName, mimeType, base64Data) {
         img.src = msg.imageSrc;
         saveBtn.disabled = false;
         saveBtn.innerText = '💾 Save & Overwrite (Cmd+S)';
+        // Reset crop box to full image on save
+        currentRatio = 'free';
+        updateRatioButtons();
+        // Wait for image layout to update then reset
+        requestAnimationFrame(() => {
+          resetCrop();
+        });
       }
     });
 
     function resetCrop() {
       const stageW = img.clientWidth;
       const stageH = img.clientHeight;
+      if (stageW === 0 || stageH === 0) return;
 
-      if (currentRatio === '1:1') {
-        const side = Math.min(stageW, stageH) * 0.9;
-        crop = {
-          left: (stageW - side) / 2,
-          top: (stageH - side) / 2,
-          width: side,
-          height: side
-        };
-      } else {
+      if (currentRatio === 'free') {
         crop = {
           left: 0,
           top: 0,
           width: stageW,
           height: stageH
         };
+      } else {
+        let targetAspect = 1;
+        if (currentRatio === '1:1') targetAspect = 1;
+        else if (currentRatio === '16:9') targetAspect = 16 / 9;
+        else if (currentRatio === '4:3') targetAspect = 4 / 3;
+
+        let w = stageW * 0.9;
+        let h = w / targetAspect;
+        if (h > stageH * 0.9) {
+          h = stageH * 0.9;
+          w = h * targetAspect;
+        }
+        crop = {
+          left: (stageW - w) / 2,
+          top: (stageH - h) / 2,
+          width: w,
+          height: h
+        };
       }
       updateUI();
     }
 
+    function updateRatioButtons() {
+      document.getElementById('ratioFree').classList.toggle('active', currentRatio === 'free');
+      document.getElementById('ratioSquare').classList.toggle('active', currentRatio === '1:1');
+      document.getElementById('ratio16_9').classList.toggle('active', currentRatio === '16:9');
+      document.getElementById('ratio4_3').classList.toggle('active', currentRatio === '4:3');
+    }
+
     function setRatio(ratio) {
       currentRatio = ratio;
-      document.getElementById('ratioFree').classList.toggle('active', ratio === 'free');
-      document.getElementById('ratioSquare').classList.toggle('active', ratio === '1:1');
+      updateRatioButtons();
 
-      if (ratio === '1:1') {
+      if (ratio !== 'free') {
+        let targetAspect = 1;
+        if (ratio === '1:1') targetAspect = 1;
+        else if (ratio === '16:9') targetAspect = 16 / 9;
+        else if (ratio === '4:3') targetAspect = 4 / 3;
+
         const stageW = img.clientWidth;
         const stageH = img.clientHeight;
-        let side = Math.min(crop.width, crop.height);
-        if (side < 30) side = Math.min(stageW, stageH) * 0.8;
 
-        let left = crop.left + (crop.width - side) / 2;
-        let top = crop.top + (crop.height - side) / 2;
+        let w = crop.width;
+        let h = w / targetAspect;
+        if (h > stageH) {
+          h = stageH;
+          w = h * targetAspect;
+        }
+        if (w > stageW) {
+          w = stageW;
+          h = w / targetAspect;
+        }
 
-        left = Math.max(0, Math.min(stageW - side, left));
-        top = Math.max(0, Math.min(stageH - side, top));
+        let left = crop.left + (crop.width - w) / 2;
+        let top = crop.top + (crop.height - h) / 2;
+        left = Math.max(0, Math.min(stageW - w, left));
+        top = Math.max(0, Math.min(stageH - h, top));
 
-        crop = { left, top, width: side, height: side };
+        crop = { left, top, width: w, height: h };
         updateUI();
       }
+    }
+
+    function toggleRatioLock() {
+      isRatioLocked = !isRatioLocked;
+      if (isRatioLocked) {
+        lockedRatioValue = crop.width / crop.height;
+        ratioLockBtn.innerText = '🔒';
+        ratioLockBtn.classList.add('locked');
+      } else {
+        ratioLockBtn.innerText = '🔓';
+        ratioLockBtn.classList.remove('locked');
+      }
+    }
+
+    function onCropInputChange() {
+      const stageW = img.clientWidth;
+      const stageH = img.clientHeight;
+      const scale = img.naturalWidth / stageW;
+
+      let targetNaturalW = parseInt(cropInputW.value, 10);
+      let targetNaturalH = parseInt(cropInputH.value, 10);
+
+      if (isNaN(targetNaturalW) || targetNaturalW < 1) targetNaturalW = 1;
+      if (isNaN(targetNaturalH) || targetNaturalH < 1) targetNaturalH = 1;
+
+      targetNaturalW = Math.min(img.naturalWidth, targetNaturalW);
+      targetNaturalH = Math.min(img.naturalHeight, targetNaturalH);
+
+      let newW = targetNaturalW / scale;
+      let newH = targetNaturalH / scale;
+
+      // Keep center of current crop
+      const centerX = crop.left + crop.width / 2;
+      const centerY = crop.top + crop.height / 2;
+
+      let newL = centerX - newW / 2;
+      let newT = centerY - newH / 2;
+
+      newL = Math.max(0, Math.min(stageW - newW, newL));
+      newT = Math.max(0, Math.min(stageH - newH, newT));
+
+      crop = { left: newL, top: newT, width: newW, height: newH };
+      updateUI();
     }
 
     function updateUI() {
@@ -576,10 +1053,20 @@ function getWebviewContent(fileName, mimeType, base64Data) {
       const actualW = Math.round(crop.width * scale);
       const actualH = Math.round(crop.height * scale);
       cropSizeBadge.innerText = \`Crop: \${actualW} x \${actualH}\`;
+
+      // Update input fields without stealing focus
+      if (document.activeElement !== cropInputW) {
+        cropInputW.value = actualW;
+      }
+      if (document.activeElement !== cropInputH) {
+        cropInputH.value = actualH;
+      }
     }
 
     // Drag handlers
     window.addEventListener('mousedown', (e) => {
+      if (e.target.closest('.modal-content') || e.target.closest('.toolbar')) return;
+
       const handle = e.target.closest('.handle');
       if (handle) {
         isDragging = true;
@@ -622,30 +1109,55 @@ function getWebviewContent(fileName, mimeType, base64Data) {
         if (dragMode.includes('t')) newT = Math.min(newB - minSize, Math.max(0, top + dy));
         if (dragMode.includes('b')) newB = Math.max(newT + minSize, Math.min(stageH, top + height + dy));
 
-        if (currentRatio === '1:1') {
-          let side;
+        let activeAspect = null;
+        if (currentRatio === '1:1') activeAspect = 1;
+        else if (currentRatio === '16:9') activeAspect = 16 / 9;
+        else if (currentRatio === '4:3') activeAspect = 4 / 3;
+        else if (isRatioLocked) activeAspect = lockedRatioValue;
+
+        if (activeAspect !== null) {
+          let sideW, sideH;
           if (dragMode === 't' || dragMode === 'b') {
-            side = newB - newT;
+            sideH = newB - newT;
+            sideW = sideH * activeAspect;
             const midX = (newL + newR) / 2;
-            newL = midX - side / 2;
-            newR = midX + side / 2;
+            newL = midX - sideW / 2;
+            newR = midX + sideW / 2;
           } else if (dragMode === 'l' || dragMode === 'r') {
-            side = newR - newL;
+            sideW = newR - newL;
+            sideH = sideW / activeAspect;
             const midY = (newT + newB) / 2;
-            newT = midY - side / 2;
-            newB = midY + side / 2;
+            newT = midY - sideH / 2;
+            newB = midY + sideH / 2;
           } else {
-            side = Math.max(newR - newL, newB - newT);
-            if (dragMode === 'tl') { newL = newR - side; newT = newB - side; }
-            if (dragMode === 'tr') { newR = newL + side; newT = newB - side; }
-            if (dragMode === 'bl') { newL = newR - side; newB = newT + side; }
-            if (dragMode === 'br') { newR = newL + side; newB = newT + side; }
+            // Corners
+            let wCandidate = newR - newL;
+            let hCandidate = newB - newT;
+            let chosenW = Math.max(wCandidate, hCandidate * activeAspect);
+            let chosenH = chosenW / activeAspect;
+
+            if (dragMode === 'tl') { newL = newR - chosenW; newT = newB - chosenH; }
+            if (dragMode === 'tr') { newR = newL + chosenW; newT = newB - chosenH; }
+            if (dragMode === 'bl') { newL = newR - chosenW; newB = newT + chosenH; }
+            if (dragMode === 'br') { newR = newL + chosenW; newB = newT + chosenH; }
           }
 
-          if (newL < 0) { newR -= newL; newL = 0; }
-          if (newR > stageW) { newL -= (newR - stageW); newR = stageW; }
-          if (newT < 0) { newB -= newT; newT = 0; }
-          if (newB > stageH) { newT -= (newB - stageH); newB = stageH; }
+          if (newL < 0) {
+            newR = Math.min(stageW, newR - newL);
+            newL = 0;
+          }
+          if (newR > stageW) {
+            newL = Math.max(0, newL - (newR - stageW));
+            newR = stageW;
+          }
+          if (newT < 0) {
+            newB = Math.min(stageH, newB - newT);
+            newT = 0;
+          }
+          if (newB > stageH) {
+            newT = Math.max(0, newT - (newB - stageH));
+            newB = stageH;
+          }
         }
 
         left = Math.max(0, newL);
@@ -665,11 +1177,23 @@ function getWebviewContent(fileName, mimeType, base64Data) {
 
     // Shortcuts
     window.addEventListener('keydown', (e) => {
+      // Don't trigger shortcuts if focus is inside an input
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+        if (e.key === 'Escape') {
+          document.activeElement.blur();
+        }
+        return;
+      }
+
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
         saveAndOverwrite();
       } else if (e.key === 'Escape') {
-        cancel();
+        if (resizeModal.classList.contains('open')) {
+          closeResizeModal();
+        } else {
+          cancel();
+        }
       } else if (e.key === '1') {
         setRatio('1:1');
       } else if (e.key.toLowerCase() === 'f') {
@@ -696,6 +1220,8 @@ function getWebviewContent(fileName, mimeType, base64Data) {
         canvas.width = naturalW;
         canvas.height = naturalH;
         const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
 
         ctx.drawImage(img, naturalX, naturalY, naturalW, naturalH, 0, 0, naturalW, naturalH);
 
@@ -714,6 +1240,93 @@ function getWebviewContent(fileName, mimeType, base64Data) {
     window.addEventListener('resize', () => {
       resetCrop();
     });
+
+    // Resize Modal Functions
+    let originalImageAspect = 1;
+
+    function openResizeModal() {
+      originalImageAspect = img.naturalWidth / img.naturalHeight;
+      modalCurrentSize.innerText = \`\${img.naturalWidth} x \${img.naturalHeight} px\`;
+      resizeWidth.value = img.naturalWidth;
+      resizeHeight.value = img.naturalHeight;
+      resizeKeepRatio.checked = true;
+      resizeModal.classList.add('open');
+    }
+
+    function closeResizeModal() {
+      resizeModal.classList.remove('open');
+    }
+
+    function onModalOverlayClick(e) {
+      if (e.target === resizeModal) {
+        closeResizeModal();
+      }
+    }
+
+    function onResizeWidthInput() {
+      if (resizeKeepRatio.checked) {
+        const w = parseFloat(resizeWidth.value);
+        if (!isNaN(w) && w > 0) {
+          resizeHeight.value = Math.round(w / originalImageAspect);
+        }
+      }
+    }
+
+    function onResizeHeightInput() {
+      if (resizeKeepRatio.checked) {
+        const h = parseFloat(resizeHeight.value);
+        if (!isNaN(h) && h > 0) {
+          resizeWidth.value = Math.round(h * originalImageAspect);
+        }
+      }
+    }
+
+    function onKeepRatioChange() {
+      if (resizeKeepRatio.checked) {
+        const w = parseFloat(resizeWidth.value);
+        if (!isNaN(w) && w > 0) {
+          resizeHeight.value = Math.round(w / originalImageAspect);
+        }
+      }
+    }
+
+    function applyPresetScale(multiplier) {
+      const newW = Math.round(img.naturalWidth * multiplier);
+      const newH = Math.round(img.naturalHeight * multiplier);
+      resizeWidth.value = newW;
+      resizeHeight.value = newH;
+    }
+
+    function executeResizeAndSave() {
+      const targetW = parseInt(resizeWidth.value, 10);
+      const targetH = parseInt(resizeHeight.value, 10);
+
+      if (isNaN(targetW) || isNaN(targetH) || targetW <= 0 || targetH <= 0) {
+        alert('Please enter valid width and height values.');
+        return;
+      }
+
+      closeResizeModal();
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Resizing & Saving...';
+
+      setTimeout(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetW;
+        canvas.height = targetH;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+
+        ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, 0, targetW, targetH);
+
+        const dataUrl = canvas.toDataURL('${mimeType}', 1.0);
+        vscode.postMessage({
+          command: 'save',
+          data: dataUrl
+        });
+      }, 50);
+    }
   </script>
 </body>
 </html>`;

@@ -41,15 +41,18 @@
 
 ### Key Features
 - **Excel-style 8 Handles**: 4 corner L-handles for diagonal resizing, and 4 edge bars for individual edge adjustments.
+- **Light & Dark Theme Toggle**: Seamlessly switch between Light and Dark visual modes with automatic preference persistence.
+- **Image Resize & Direct Crop Input**: Resize image dimensions with presets (25%–200%) or exact px, and directly type crop dimensions (W × H) with ratio locking.
+- **Auto Reset to Full Image**: Automatically resets the crop box to cover the entire image upon saving or resetting.
+- **Aspect Ratio Presets**: Switch easily between Free-form, 1:1 (Square), 16:9, and 4:3 modes.
 - **Instant Overwrite**: Overwrite the original image file directly with `Cmd + S` or the "Save & Overwrite" button.
-- **Aspect Ratio Locking**: Switch easily between Free-form cropping and 1:1 (Square) mode.
-- **Lossless & Transparency Preserved**: Keeps PNG/WebP alpha transparency and original resolution intact.
+- **Lossless & Transparency Preserved**: Keeps PNG/WebP alpha transparency and high resolution intact.
 - **Supported Formats**: PNG, JPG, JPEG, WEBP, BMP.
 
 ### How to Use
 1. Right-click any image file in the VS Code Explorer.
 2. Select **`Image Editor: Simple Crop`**.
-3. Drag the corner L-handles or edge bars to trim unwanted borders.
+3. Drag the corner L-handles or edge bars to trim unwanted borders, or enter exact W × H in the header.
 4. Press **`Cmd + S`** (or click "Save & Overwrite") to update your image.
 
 ### Shortcuts
@@ -59,7 +62,7 @@
 | **1** | Switch to 1:1 (Square) ratio |
 | **F** | Switch to Free-form ratio |
 | **R** | Reset crop box to full image |
-| **Esc** | Close without saving |
+| **Esc** | Close modal or editor without saving |
 
 ---
 
@@ -70,15 +73,18 @@
 
 ### 主な特徴
 - **Excel風の8方向ハンドル**: 斜め調整の「L字ハンドル」と、上下左右の辺を個別に詰められる「バーハンドル」を搭載。
+- **Light / Dark テーマ切り替え**: ツールバー右上のボタンからワンタップで切り替え可能（設定は自動記憶）。
+- **サイズ変更・解像度リサイズ機能**: プリセット倍率（25%〜200%）や任意pxでの画像リサイズ、およびクロップサイズの直接px入力（W × H、縦横比固定ロック対応）。
+- **保存後の自動フルリセット**: 「Save & Overwrite」実行後、調整枠が自動的に新画像全体（100%）にフィットした状態にリセット。
+- **多彩な比率プリセット**: 自由比率（Free）、1:1（正方形）、16:9、4:3をワンタップ切替。
 - **ワンクリック上書き保存**: `Cmd + S` または保存ボタンで、元画像ファイルを即座に直接上書き。
-- **比率切り替え**: アイコン作成に便利な「1:1（正方形）」と「自由比率」をワンタップ切替。
 - **透過と高画質を維持**: PNG/WebPの透明度（アルファチャンネル）や解像度を損なわずに保存。
 - **対応形式**: PNG, JPG, JPEG, WEBP, BMP。
 
 ### 使い方
 1. エクスプローラーで画像ファイルを **右クリック**。
 2. **`Image Editor: Simple Crop`** を選択。
-3. ハンドルをドラッグしてトリミング範囲を調整（枠内ドラッグで位置移動）。
+3. ハンドルをドラッグ、またはヘッダーのW/H数値を入力してトリミング範囲を調整（枠内ドラッグで位置移動）。
 4. **`Cmd + S`** を押すと、元ファイルに上書き保存されます。
 
 ---
