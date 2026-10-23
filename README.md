@@ -40,8 +40,11 @@
 **Image Editor: Simple Crop** provides a familiar and intuitive cropping experience inspired by Microsoft Excel's crop tool. Instead of complicated photo editing menus, you can adjust top, bottom, left, right edges and corners individually, then press `Cmd+S` to overwrite the file in place immediately.
 
 ### Key Features
+- **Markup & Annotations (Mac Preview-style)**: Add shapes (Rectangle, Rounded Rectangle, Circle/Ellipse, Arrow, Line) and Text annotations with customizable stroke width (2px–16px), border colors, fill colors (including transparency), and font styles.
+- **macOS-Style Color Palette Popover & Eyedropper**: Clean and elegant color popover with quick-pick colors, transparent swatches, full hue gradient grids, and an **Excel-style Eyedropper tool** to sample and pick any color directly from the image.
 - **Excel-style 8 Handles**: 4 corner L-handles for diagonal resizing, and 4 edge bars for individual edge adjustments.
-- **⚙️ Settings Modal & Multi-Language (12 Languages)**: Configure Theme (Light/Dark) and Language (English, 日本語, 简体中文, 한국어, Español, Deutsch, Français, Tiếng Việt, हिन्दी, Italiano, Português, Русский) directly from the header settings button.
+- **Undo / Redo & Duplication**: Full undo/redo history (`Cmd+Z`, `Cmd+Shift+Z`), duplicate (`Cmd+D`), nudge with arrow keys, and delete (`Del`/`Backspace`).
+- **⚙️ Settings Modal & Multi-Language (12 Languages)**: Configure Theme (Light/Dark) and Language (English, 日本語, 简体中文, 한국어, Español, Deutsch, Français, Tiếng曖, हिन्दी, Italiano, Português, Русский) directly from the header settings button.
 - **Persistent Light / Dark Theme**: Starts in Light theme by default, and automatically remembers your chosen theme (Dark/Light) across sessions.
 - **Image Resize & Direct Crop Input**: Resize image dimensions with presets (25%–200%) or exact px, and directly type crop dimensions (W × H) with ratio locking.
 - **Canvas Zoom Controls**: Zoom in/out (25%–400%) via footer controls, mouse wheel (Cmd/Ctrl + Wheel), and keyboard shortcuts.
@@ -54,14 +57,20 @@
 ### How to Use
 1. Right-click any image file in the VS Code Explorer.
 2. Select **`Image Editor: Simple Crop`**.
-3. Drag the corner L-handles or edge bars to trim unwanted borders, or enter exact W × H in the header.
-4. Press **`Cmd + S`** (or click "Save & Overwrite") to update your image.
+3. Use the toolbar to add shapes, text, arrows, adjust border/fill colors and stroke width.
+4. Drag handles to adjust crop or shape bounds.
+5. Press **`Cmd + S`** (or click "Save & Overwrite") to update your image.
 
 ### Shortcuts
 | Shortcut | Action |
 |---|---|
 | **Cmd + S** / **Ctrl + S** | Save & Overwrite original image |
 | **Cmd + C** / **Ctrl + C** | Copy cropped image to clipboard |
+| **Cmd + Z** / **Ctrl + Z** | Undo annotation changes |
+| **Cmd + Shift + Z** / **Cmd + Y** | Redo annotation changes |
+| **Cmd + D** / **Ctrl + D** | Duplicate selected shape or text |
+| **Delete** / **Backspace** | Delete selected shape or text |
+| **Arrow Keys** (with Shift) | Nudge selected object by 2px (or 10px) |
 | **Cmd + Wheel** / **Ctrl + Wheel** | Zoom In / Out |
 | **Cmd + +** / **Ctrl + +** | Zoom In |
 | **Cmd + -** / **Ctrl + -** | Zoom Out |
@@ -79,7 +88,11 @@
 **Image Editor: Simple Crop** は、Microsoft Excelの画像トリミングと同様の直感的な操作感を提供する画像切り抜き拡張機能です。余計な機能や複雑なレイヤー操作はなく、上下左右や四隅のハンドルを動かして `Cmd + S` を押すだけで、元画像に直接上書き保存できます。
 
 ### 主な特徴
+- **Macプレビュー風マークアップ機能（図形・テキスト・矢印）**: 四角形、角丸四角形、円・楕円、矢印、直線の追加、およびテキスト追加・インライン編集に対応。
+- **Mac風カラーパレット & スポイト機能（Excel風）**: 12色のクイックパレット、透明（なし）設定、グレースケール＆グラデーションカラーチャートに加え、**画像内のクリックした場所の色を取得できるスポイトツール**を搭載。
+- **枠線の太さ・色＆塗りつぶし色調整**: 枠線の太さ（2px〜16px）、枠線色、塗りつぶし色（透明/カラー）を自由に選択・変更。
 - **Excel風の8方向ハンドル**: 斜め調整の「L字ハンドル」と、上下左右の辺を個別に詰められる「バーハンドル」を搭載。
+- **Undo / Redo & 複製・削除**: 操作のやり直し/元に戻す（`Cmd+Z` / `Cmd+Shift+Z`）、複製（`Cmd+D`）、削除（`Del`/`Backspace`）、矢印キーによる位置微調整に対応。
 - **⚙️ 設定モーダル & 多言語対応（12言語）**: ツールバー左側の設定アイコンから、テーマ（Light / Dark）と表示言語（日本語、英語、中国語、韓国語、スペイン語、ドイツ語、フランス語、ベトナム語、ヒンディー語、イタリア語、ポルトガル語、ロシア語の全12言語）を設定可能。
 - **テーマ設定の固定・永続化**: デフォルトは「Light」。ユーザーがDark等に変更した場合は以降すべての画像で設定を自動維持。
 - **サイズ変更・解像度リサイズ機能**: プリセット倍率（25%〜200%）や任意pxでの画像リサイズ、およびクロップサイズの直接px入力（W × H、縦横比固定ロック対応）。
@@ -93,8 +106,9 @@
 ### 使い方
 1. エクスプローラーで画像ファイルを **右クリック**。
 2. **`Image Editor: Simple Crop`** を選択。
-3. ハンドルをドラッグ、またはヘッダーのW/H数値を入力してトリミング範囲を調整（枠内ドラッグで位置移動）。
-4. **`Cmd + S`** を押すと、元ファイルに上書き保存されます。
+3. ツールバーから図形、矢印、テキストを追加し、線の太さや枠線色・塗りつぶし色を調整。
+4. クロップハンドルをドラッグして必要に応じてトリミング範囲を調整。
+5. **`Cmd + S`** を押すと、元ファイルに直接上書き保存されます。
 
 ---
 

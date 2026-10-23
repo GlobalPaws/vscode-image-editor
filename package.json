@@ -1,17 +1,19 @@
 {
   "name": "simple-image-crop",
   "displayName": "Image Editor: Simple Crop",
-  "description": "Fast & intuitive image cropping, resizing, and zoom with Excel-style handles and direct overwrite saving. / Excel風ハンドル操作で直感的にトリミング・リサイズ・ズームし、元ファイルに直接上書き保存します。",
-  "version": "1.5.1",
+  "description": "Fast & intuitive image cropping, resizing, annotations (shapes, text, arrows), and direct overwrite saving. / 直感的なトリミング・リサイズ・図形やテキスト・矢印などの注釈追加に対応し、元ファイルに直接上書き保存します。",
+  "version": "1.6.0",
   "publisher": "globalpaws",
   "icon": "icon.png",
   "engines": {
-    "vscode": "^1.70.0"
+    "vscode": "^1.75.0"
   },
   "scripts": {
-    "lint": "node -c extension.js",
-    "lint:fix": "node -c extension.js",
-    "package": "vsce package"
+    "lint": "node -c extension.js && node test/verify-webview.js",
+    "lint:fix": "node -c extension.js && node test/verify-webview.js",
+    "test": "node test/verify-webview.js",
+    "package": "vsce package",
+    "package:vsix": "vsce package --allow-missing-repository"
   },
   "keywords": [
     "crop",
@@ -25,15 +27,16 @@
     "circle-crop",
     "rotate",
     "rounded-corners",
-    "image-crop"
+    "image-crop",
+    "shapes",
+    "text",
+    "arrow",
+    "markup",
+    "annotation"
   ],
   "categories": [
     "Visualization",
     "Other"
-  ],
-  "activationEvents": [
-    "onCommand:simple-image-crop.crop",
-    "onCustomEditor:simple-image-crop.editor"
   ],
   "main": "./extension.js",
   "contributes": {
