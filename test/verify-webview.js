@@ -74,7 +74,11 @@ try {
   const scriptEnd = htmlWithStyle.indexOf('</script>');
   const scriptCode = htmlWithStyle.substring(scriptStart, scriptEnd);
   new Function(scriptCode);
+  if (!htmlWithStyle.includes('annotation-rotate-handle') || !htmlWithStyle.includes('copySelectedAnnotation')) {
+    throw new Error('Rotation handles or copy/paste functions missing from Webview script');
+  }
   console.log('  ✅ [Style Persistence] Custom style injection & Webview script syntax OK');
+  console.log('  ✅ [Rotation & CopyPaste] Functions and handles verified');
 } catch (err) {
   console.error('  ❌ [Style Persistence] Error:', err.message);
   hasError = true;

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2026-10-24
+
+### Added
+- **Rotation Handle for Shapes & Text**: Drag rotation handle (`⟳`) to rotate shapes and text to any angle, with 15° snapping via Shift key, fully reflected on canvas export.
+- **Copy & Paste for Annotations**: Copy selected shape or text with `Cmd+C` / `Ctrl+C` and paste with `Cmd+V` / `Ctrl+V`, integrated with right-click context menu.
+
+### Fixed
+- **Default Text Font Size**: Fixed initial text font size to 18px and eliminated redundant outer focus frame during inline text editing.
+- **Style Persistence**: Ensured stroke width, colors, and typography settings persist across different images and editor sessions.
+
 ## [1.6.0] - 2026-10-24
 
 ### Added

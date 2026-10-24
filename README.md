@@ -65,7 +65,8 @@
 | Shortcut | Action |
 |---|---|
 | **Cmd + S** / **Ctrl + S** | Save & Overwrite original image |
-| **Cmd + C** / **Ctrl + C** | Copy cropped image to clipboard |
+| **Cmd + C** / **Ctrl + C** | Copy selected shape/text (or cropped image if none selected) |
+| **Cmd + V** / **Ctrl + V** | Paste copied shape/text |
 | **Cmd + Z** / **Ctrl + Z** | Undo annotation changes |
 | **Cmd + Shift + Z** / **Cmd + Y** | Redo annotation changes |
 | **Cmd + D** / **Ctrl + D** | Duplicate selected shape or text |

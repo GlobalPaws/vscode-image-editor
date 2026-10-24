@@ -2254,10 +2254,15 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
   <!-- Custom Context Menu -->
   <div id="customContextMenu" class="context-menu">
-    <div class="context-menu-item" onclick="copyCroppedImage()">
+    <div class="context-menu-item" id="contextMenuCopyItem" onclick="handleContextMenuCopy()">
       <span class="context-menu-icon">📋</span>
       <span class="context-menu-label" id="contextMenuCopyLabel">Copy</span>
       <span class="context-menu-shortcut" id="contextMenuShortcutLabel">Cmd+C</span>
+    </div>
+    <div class="context-menu-item" id="contextMenuPasteItem" onclick="handleContextMenuPaste()" style="display: none;">
+      <span class="context-menu-icon">📋</span>
+      <span class="context-menu-label" id="contextMenuPasteLabel">Paste</span>
+      <span class="context-menu-shortcut" id="contextMenuPasteShortcutLabel">Cmd+V</span>
     </div>
   </div>
 
@@ -4269,6 +4274,43 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       renderAnnotations();
     }
 
+    let clipboardAnnotation = null;
+
+    function copySelectedAnnotation() {
+      const item = annotations.find(a => a.id === selectedAnnotationId);
+      if (!item) return false;
+      clipboardAnnotation = JSON.parse(JSON.stringify(item));
+      const t = getT();
+      showToast(t.annoCopiedToast || '📋 コピーしました (Cmd+V で貼り付け)');
+      return true;
+    }
+
+    function pasteAnnotation() {
+      if (!clipboardAnnotation) return false;
+      pushHistory();
+      const copy = JSON.parse(JSON.stringify(clipboardAnnotation));
+      copy.id = 'anno_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      const offset = 20;
+      if (copy.type === 'line' || copy.type === 'arrow') {
+        copy.x1 += offset; copy.y1 += offset;
+        copy.x2 += offset; copy.y2 += offset;
+        clipboardAnnotation.x1 = copy.x1;
+        clipboardAnnotation.y1 = copy.y1;
+        clipboardAnnotation.x2 = copy.x2;
+        clipboardAnnotation.y2 = copy.y2;
+      } else {
+        copy.x += offset; copy.y += offset;
+        clipboardAnnotation.x = copy.x;
+        clipboardAnnotation.y = copy.y;
+      }
+      annotations.push(copy);
+      selectAnnotation(copy.id);
+      renderAnnotations();
+      const t = getT();
+      showToast(t.annoPastedToast || '📋 貼り付けました');
+      return true;
+    }
+
     function escapeXml(unsafe) {
       return (unsafe || '').replace(/[<>&'"]/g, c => {
         if (c === '<') return '&lt;';
@@ -4289,6 +4331,35 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       return x2 + ',' + y2 + ' ' + p1x + ',' + p1y + ' ' + p2x + ',' + p2y;
     }
 
+    function getAnnotationCenter(item) {
+      if (item.type === 'line' || item.type === 'arrow') {
+        return {
+          cx: (item.x1 + item.x2) / 2,
+          cy: (item.y1 + item.y2) / 2,
+          w: Math.abs(item.x2 - item.x1),
+          h: Math.abs(item.y2 - item.y1)
+        };
+      }
+      let w = item.width || 80;
+      let h = item.height || (item.fontSize ? item.fontSize * 1.25 : 24);
+      if (item.type === 'text') {
+        const el = document.getElementById(item.id);
+        if (el && el.getBBox) {
+          try {
+            const bb = el.getBBox();
+            if (bb.width > 0) w = bb.width;
+            if (bb.height > 0) h = bb.height;
+          } catch(e) {}
+        }
+      }
+      return {
+        cx: item.x + w / 2,
+        cy: item.y + h / 2,
+        w,
+        h
+      };
+    }
+
     function renderAnnotations() {
       if (!img.naturalWidth || !img.naturalHeight) return;
       annotationsSvg.setAttribute('viewBox', '0 0 ' + img.naturalWidth + ' ' + img.naturalHeight);
@@ -4299,23 +4370,26 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         const stroke = item.strokeColor === 'transparent' ? 'none' : item.strokeColor;
         const fill = item.fillColor === 'transparent' ? 'none' : item.fillColor;
         const sw = item.strokeWidth;
+        const rot = item.rotation || 0;
+        const center = getAnnotationCenter(item);
+        const rotAttr = rot !== 0 ? ' transform="rotate(' + rot + ' ' + center.cx + ' ' + center.cy + ')"' : '';
 
         if (item.type === 'rect') {
-          shapesHtml += '<rect class="annotation-item" x="' + item.x + '" y="' + item.y + '" width="' + item.width + '" height="' + item.height + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
+          shapesHtml += '<rect class="annotation-item"' + rotAttr + ' x="' + item.x + '" y="' + item.y + '" width="' + item.width + '" height="' + item.height + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
         } else if (item.type === 'rounded-rect') {
           const r = item.radius || 16;
-          shapesHtml += '<rect class="annotation-item" x="' + item.x + '" y="' + item.y + '" width="' + item.width + '" height="' + item.height + '" rx="' + r + '" ry="' + r + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
+          shapesHtml += '<rect class="annotation-item"' + rotAttr + ' x="' + item.x + '" y="' + item.y + '" width="' + item.width + '" height="' + item.height + '" rx="' + r + '" ry="' + r + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
         } else if (item.type === 'ellipse') {
           const rx = Math.abs(item.width / 2);
           const ry = Math.abs(item.height / 2);
           const cx = item.x + rx;
           const cy = item.y + ry;
-          shapesHtml += '<ellipse class="annotation-item" cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
+          shapesHtml += '<ellipse class="annotation-item"' + rotAttr + ' cx="' + cx + '" cy="' + cy + '" rx="' + rx + '" ry="' + ry + '" stroke="' + stroke + '" stroke-width="' + sw + '" fill="' + fill + '" data-id="' + item.id + '" />';
         } else if (item.type === 'line') {
-          shapesHtml += '<line class="annotation-item" x1="' + item.x1 + '" y1="' + item.y1 + '" x2="' + item.x2 + '" y2="' + item.y2 + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" data-id="' + item.id + '" />';
+          shapesHtml += '<line class="annotation-item"' + rotAttr + ' x1="' + item.x1 + '" y1="' + item.y1 + '" x2="' + item.x2 + '" y2="' + item.y2 + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" data-id="' + item.id + '" />';
         } else if (item.type === 'arrow') {
           const arrowHead = getArrowHeadPolygon(item.x1, item.y1, item.x2, item.y2, sw);
-          shapesHtml += '<g class="annotation-item" data-id="' + item.id + '">' +
+          shapesHtml += '<g class="annotation-item"' + rotAttr + ' data-id="' + item.id + '">' +
             '<line x1="' + item.x1 + '" y1="' + item.y1 + '" x2="' + item.x2 + '" y2="' + item.y2 + '" stroke="' + stroke + '" stroke-width="' + sw + '" stroke-linecap="round" />' +
             '<polygon points="' + arrowHead + '" fill="' + stroke + '" />' +
             '</g>';
@@ -4330,7 +4404,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
           lines.forEach((line, idx) => {
             tspans += '<tspan x="' + item.x + '" dy="' + (idx === 0 ? 0 : lineHeight) + '">' + escapeXml(line || ' ') + '</tspan>';
           });
-          shapesHtml += '<text id="' + item.id + '" class="annotation-item" x="' + item.x + '" y="' + (item.y + item.fontSize * 0.85) + '" fill="' + (item.color || stroke) + '" font-size="' + item.fontSize + '" font-weight="' + item.fontWeight + '" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" data-id="' + item.id + '">' + tspans + '</text>';
+          shapesHtml += '<text id="' + item.id + '" class="annotation-item"' + rotAttr + ' x="' + item.x + '" y="' + (item.y + item.fontSize * 0.85) + '" fill="' + (item.color || stroke) + '" font-size="' + item.fontSize + '" font-weight="' + item.fontWeight + '" font-family="-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif" data-id="' + item.id + '">' + tspans + '</text>';
         }
       }
       annotationsGroup.innerHTML = shapesHtml;
@@ -4354,11 +4428,27 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       const stageW = img.clientWidth || 1;
       const scale = img.naturalWidth / stageW;
       const handleR = Math.max(5, 5 * scale * 0.8);
+      const rotHandleR = Math.max(8, 8 * scale * 0.85);
+      const rotDist = Math.max(22, 22 * scale);
+      const rot = item.rotation || 0;
+      const center = getAnnotationCenter(item);
+      const rotAttr = rot !== 0 ? ' transform="rotate(' + rot + ' ' + center.cx + ' ' + center.cy + ')"' : '';
       let html = '';
+
+      function buildRotateHandle(topMidX, topMidY) {
+        const rotX = topMidX;
+        const rotY = topMidY - rotDist;
+        const arrowR = rotHandleR * 0.55;
+        return '<line x1="' + topMidX + '" y1="' + topMidY + '" x2="' + rotX + '" y2="' + rotY + '" stroke="#0078d4" stroke-width="1.5" />' +
+          '<g class="annotation-handle annotation-rotate-handle" data-handle="rotate" style="cursor: grab;">' +
+          '<circle cx="' + rotX + '" cy="' + rotY + '" r="' + rotHandleR + '" fill="#ffffff" stroke="#0078d4" stroke-width="1.5" />' +
+          '<path d="M ' + (rotX - arrowR * 0.7) + ' ' + (rotY - arrowR * 0.3) + ' A ' + arrowR + ' ' + arrowR + ' 0 1 1 ' + (rotX - arrowR * 0.3) + ' ' + (rotY + arrowR * 0.7) + ' M ' + (rotX - arrowR * 0.9) + ' ' + (rotY - arrowR * 0.9) + ' L ' + (rotX - arrowR * 0.7) + ' ' + (rotY - arrowR * 0.3) + ' L ' + (rotX - arrowR * 0.1) + ' ' + (rotY - arrowR * 0.7) + '" fill="none" stroke="#0078d4" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" pointer-events="none" />' +
+          '</g>';
+      }
 
       if (item.type === 'rect' || item.type === 'rounded-rect' || item.type === 'ellipse') {
         const x = item.x, y = item.y, w = item.width, h = item.height;
-        html += '<rect class="annotation-selection-box" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" />';
+        let innerHtml = '<rect class="annotation-selection-box" x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" />';
         const handles = [
           { type: 'nw', cx: x, cy: y, cursor: 'nwse-resize' },
           { type: 'n',  cx: x + w / 2, cy: y, cursor: 'ns-resize' },
@@ -4370,11 +4460,15 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
           { type: 'w',  cx: x, cy: y + h / 2, cursor: 'ew-resize' }
         ];
         for (const hnd of handles) {
-          html += '<circle class="annotation-handle" cx="' + hnd.cx + '" cy="' + hnd.cy + '" r="' + handleR + '" style="cursor: ' + hnd.cursor + ';" data-handle="' + hnd.type + '" />';
+          innerHtml += '<circle class="annotation-handle" cx="' + hnd.cx + '" cy="' + hnd.cy + '" r="' + handleR + '" style="cursor: ' + hnd.cursor + ';" data-handle="' + hnd.type + '" />';
         }
+        innerHtml += buildRotateHandle(x + w / 2, y);
+        html = '<g' + rotAttr + '>' + innerHtml + '</g>';
       } else if (item.type === 'line' || item.type === 'arrow') {
+        html += '<g' + rotAttr + '>';
         html += '<circle class="annotation-handle" cx="' + item.x1 + '" cy="' + item.y1 + '" r="' + handleR + '" style="cursor: crosshair;" data-handle="p1" />';
         html += '<circle class="annotation-handle" cx="' + item.x2 + '" cy="' + item.y2 + '" r="' + handleR + '" style="cursor: crosshair;" data-handle="p2" />';
+        html += '</g>';
       } else if (item.type === 'text') {
         if (editingTextItem && editingTextItem.id === item.id) {
           // While actively editing, inline editor already provides the focus frame
@@ -4388,8 +4482,10 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         }
         const pad = 4;
         const bx = bbox.x - pad, by = bbox.y - pad, bw = bbox.width + pad * 2, bh = bbox.height + pad * 2;
-        html += '<rect class="annotation-selection-box" x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" />';
-        html += '<circle class="annotation-handle" cx="' + (bx + bw) + '" cy="' + (by + bh) + '" r="' + handleR + '" style="cursor: nwse-resize;" data-handle="se" />';
+        let innerHtml = '<rect class="annotation-selection-box" x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" />';
+        innerHtml += '<circle class="annotation-handle" cx="' + (bx + bw) + '" cy="' + (by + bh) + '" r="' + handleR + '" style="cursor: nwse-resize;" data-handle="se" />';
+        innerHtml += buildRotateHandle(bx + bw / 2, by);
+        html = '<g' + rotAttr + '>' + innerHtml + '</g>';
       }
       selectionGroup.innerHTML = html;
     }
@@ -4413,6 +4509,8 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       inlineTextEditor.style.fontSize = fontSizePx + 'px';
       inlineTextEditor.style.fontWeight = item.fontWeight || 'bold';
       inlineTextEditor.style.color = item.color || item.strokeColor || '#ff3b30';
+      inlineTextEditor.style.transform = item.rotation ? 'rotate(' + item.rotation + 'deg)' : '';
+      inlineTextEditor.style.transformOrigin = 'top left';
       inlineTextEditor.value = item.text || '';
       inlineTextEditor.style.display = 'block';
 
@@ -4441,6 +4539,7 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         selectedAnnotationId = null;
       }
       inlineTextEditor.style.display = 'none';
+      inlineTextEditor.style.transform = '';
       editingTextItem = null;
       renderAnnotations();
     }
@@ -4962,6 +5061,31 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         const item = annotations.find(a => a.id === selectedAnnotationId);
         if (!item) return;
 
+        if (annoDragMode === 'rotate') {
+          const imgRect = img.getBoundingClientRect();
+          const scale = img.naturalWidth / imgRect.width;
+          const mouseNatX = (e.clientX - imgRect.left) * scale;
+          const mouseNatY = (e.clientY - imgRect.top) * scale;
+          const center = getAnnotationCenter(annoStartObj);
+          const rad = Math.atan2(mouseNatY - center.cy, mouseNatX - center.cx);
+          let deg = (rad * 180 / Math.PI) + 90;
+          deg = (deg % 360 + 360) % 360;
+
+          if (e.shiftKey) {
+            deg = Math.round(deg / 15) * 15;
+          } else {
+            for (const snap of [0, 45, 90, 135, 180, 225, 270, 315, 360]) {
+              if (Math.abs(deg - snap) <= 4) {
+                deg = snap % 360;
+                break;
+              }
+            }
+          }
+          item.rotation = Math.round(deg);
+          renderAnnotations();
+          return;
+        }
+
         if (annoDragMode === 'move') {
           if (item.type === 'line' || item.type === 'arrow') {
             item.x1 = annoStartObj.x1 + dx;
@@ -5314,9 +5438,24 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
         if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
           return;
         }
+        if (selectedAnnotationId) {
+          e.preventDefault();
+          copySelectedAnnotation();
+          return;
+        }
         e.preventDefault();
         copyCroppedImage();
         return;
+      }
+      if (isCmdOrCtrl && e.key.toLowerCase() === 'v') {
+        if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+          return;
+        }
+        if (clipboardAnnotation) {
+          e.preventDefault();
+          pasteAnnotation();
+          return;
+        }
       }
 
       // Don't trigger single-letter shortcuts (1, F, P, R, etc.) if focus is inside an input
@@ -5395,9 +5534,37 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
       }
     }
 
+    function handleContextMenuCopy() {
+      closeContextMenu();
+      if (selectedAnnotationId) {
+        copySelectedAnnotation();
+      } else {
+        copyCroppedImage();
+      }
+    }
+
+    function handleContextMenuPaste() {
+      closeContextMenu();
+      pasteAnnotation();
+    }
+
     window.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       if (!contextMenu) return;
+
+      const pasteItem = document.getElementById('contextMenuPasteItem');
+      if (pasteItem) {
+        pasteItem.style.display = clipboardAnnotation ? 'flex' : 'none';
+      }
+      const copyLabel = document.getElementById('contextMenuCopyLabel');
+      if (copyLabel) {
+        const t = getT();
+        if (selectedAnnotationId) {
+          copyLabel.innerText = t.copyShapeMenu || '図形をコピー';
+        } else {
+          copyLabel.innerText = t.copyMenu || 'Copy';
+        }
+      }
 
       contextMenu.style.display = 'block';
       const menuW = contextMenu.offsetWidth || 150;
@@ -5482,6 +5649,12 @@ function getWebviewContent(fileName, mimeType, base64Data, config) {
 
       for (const item of annotations) {
         ctx.save();
+        if (item.rotation) {
+          const center = getAnnotationCenter(item);
+          ctx.translate(center.cx, center.cy);
+          ctx.rotate((item.rotation * Math.PI) / 180);
+          ctx.translate(-center.cx, -center.cy);
+        }
         const stroke = item.strokeColor === 'transparent' ? null : item.strokeColor;
         const fill = item.fillColor === 'transparent' ? null : item.fillColor;
         ctx.lineWidth = item.strokeWidth;

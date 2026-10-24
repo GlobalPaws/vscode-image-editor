@@ -2,7 +2,7 @@
   "name": "simple-image-crop",
   "displayName": "Image Editor: Simple Crop",
   "description": "Fast & intuitive image cropping, resizing, annotations (shapes, text, arrows), and direct overwrite saving. / 直感的なトリミング・リサイズ・図形やテキスト・矢印などの注釈追加に対応し、元ファイルに直接上書き保存します。",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "publisher": "globalpaws",
   "icon": "icon.png",
   "engines": {
